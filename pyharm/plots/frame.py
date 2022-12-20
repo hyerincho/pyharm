@@ -136,13 +136,8 @@ def frame(fname, diag, kwargs):
                 #if dump['r_out'] >= 60:
                 #    sz = 60
                 #else:
-<<<<<<< HEAD
                 #    sz = dump['r_out']
                 sz = dump['r_out']
-=======
-                    #sz = dump['r_out']
-                sz = dump['r_out'] # modified by Hyerin (10/31/2022)
->>>>>>> 5d7d02925107d0d5158ff19074c2cb7c67ddb3ea
 
         # Choose a centered window
         # TODO 'half' and similar args for non-centered windows
