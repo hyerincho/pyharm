@@ -69,11 +69,14 @@ def frame(fname, diag, kwargs):
     movie_types = []
     ghost_zones = False
     for movie_type in kwargs['movie_types'].split(","):
-        frame_folder = os.path.join(os.getcwd().replace(kwargs['base_path'], kwargs['out_path']), "frames_"+movie_type)
+        if kwargs['out_path'] is None: # Hyerin (10/31/2022): if none, just use the dir from the argument (see ../scripts/pyharm-movie)
+            frame_folder = kwargs['frame_dir']
+        else:
+            frame_folder = os.path.join(os.getcwd().replace(kwargs['base_path'], kwargs['out_path']), "frames_"+movie_type)
         if 'accurate_fnames' in kwargs and kwargs['accurate_fnames']:
             frame_name = os.path.join(frame_folder, "frame_t%03.2f.png" % tdump)
         else:
-            frame_name = os.path.join(frame_folder, "frame_t%08d.png" % int(tdump))
+            frame_name = os.path.join(frame_folder, "frame_t%013d.png" % int(tdump))
 
         if 'resume' in kwargs and kwargs['resume'] and os.path.exists(frame_name):
             continue
@@ -127,10 +130,11 @@ def frame(fname, diag, kwargs):
             else:
                 # Mediocre heuristic for "enough" of domain.
                 # Users should specify
-                if dump['r_out'] >= 60:
-                    sz = 60
-                else:
-                    sz = dump['r_out']
+                #if dump['r_out'] >= 60:
+                #    sz = 60
+                #else:
+                    #sz = dump['r_out']
+                sz = dump['r_out'] # modified by Hyerin (10/31/2022)
 
         # Choose a centered window
         # TODO 'half' and similar args for non-centered windows
@@ -166,7 +170,7 @@ def frame(fname, diag, kwargs):
         fig = plt.figure(figsize=(kwargs['fig_x'], kwargs['fig_y']))
 
         # PLOT
-        if movie_type in figures.__dict__:
+        if movie_type in figures.__dict__ and "divB" not in movie_type:
             # Named movie frame figures in figures.py
             fig = figures.__dict__[movie_type](fig, dump, diag, plotrc)
 
