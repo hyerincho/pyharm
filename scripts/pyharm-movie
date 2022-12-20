@@ -138,7 +138,7 @@ def movie(movie_types, paths, **kwargs):
         out_path = os.path.abspath(os.environ['PYHARM_OUTPUT_DIR'])
     else:
         # Defaults to current dir
-        out_path = os.path.abspath(kwargs['output_dir'])
+        out_path = None #os.path.abspath(kwargs['output_dir']) # modified by Hyerin (10/31/2022)
 
     for path in path_dirs:
         # If a path...
@@ -167,7 +167,13 @@ def movie(movie_types, paths, **kwargs):
         kwargs['out_path'] = out_path
 
         for movie_type in movie_types.split(","):
-            frame_dir = os.path.join(os.getcwd().replace(base_path, out_path), "frames_"+movie_type)
+            if out_path is None: # Hyerin (10/31/2022) use the output dir from the argument
+                print(os.getcwd())
+                frame_dir = os.path.abspath(kwargs['output_dir']) #
+                print(frame_dir)
+                kwargs['frame_dir'] = frame_dir
+            else:
+                frame_dir = os.path.join(os.getcwd().replace(base_path, out_path), "frames_"+movie_type)
             os.makedirs(frame_dir, exist_ok=True)
 
         try:
