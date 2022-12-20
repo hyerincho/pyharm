@@ -130,10 +130,11 @@ def frame(fname, diag, kwargs):
             else:
                 # Mediocre heuristic for "enough" of domain.
                 # Users should specify
-                if dump['r_out'] >= 60:
-                    sz = 60
-                else:
-                    sz = dump['r_out']
+                #if dump['r_out'] >= 60:
+                #    sz = 60
+                #else:
+                #    sz = dump['r_out']
+                sz = dump['r_out']
 
         # Choose a centered window
         # TODO 'half' and similar args for non-centered windows
