@@ -62,7 +62,7 @@ class ExtensibleCmd(click.Command):
 @click.argument('paths', nargs=-1, type=click.Path(exists=True))
 # Common options
 @click.option('-s', '--tstart', default=0., help="Start time.")
-@click.option('-e', '--tend', default=1e7, help="End time.")
+@click.option('-e', '--tend', default=1e14, help="End time.")
 @click.option('-n', '--nthreads', default=None, help="Number of processes to use, if not using MPI")
 @click.option('-o', '--output_dir', default=".", help="Base directory for outputs. Any folder structure of models will be preserved.")
 # Figure options
@@ -91,9 +91,13 @@ class ExtensibleCmd(click.Command):
 @click.option('--ymin', default=None, help="Window Y minimum.")
 @click.option('--ymax', default=None, help="Window Y maximum.")
 @click.option('--overlay_field', is_flag=True, help="Overlay field lines.")
+<<<<<<< HEAD
 @click.option('--overlay_grid', is_flag=True, help="Overlay simulation zone borders.")
 @click.option('--native', is_flag=True, help="Plot in native coordinates X1,X2,X3 rather than converting to Cartesian.")
 @click.option('--bh', default=True, help="Whether to show the BH shadow.")
+=======
+@click.option('--native', is_flag=False, help="Plot in native coordinates.")
+>>>>>>> 5d7d02925107d0d5158ff19074c2cb7c67ddb3ea
 @click.option('--no_grid_cache', is_flag=True, help="Don't cache geometry.  For plotting large Cartesian simulations.")
 @click.option('--prefer_iharm3d', is_flag=True, help="Prefer iharm3d-format files if available alongside KHARMA output")
 # Extras
@@ -134,7 +138,7 @@ def movie(movie_types, paths, **kwargs):
         out_path = os.path.abspath(os.environ['PYHARM_OUTPUT_DIR'])
     else:
         # Defaults to current dir
-        out_path = os.path.abspath(kwargs['output_dir'])
+        out_path = None #os.path.abspath(kwargs['output_dir']) # modified by Hyerin (10/31/2022)
 
     for path in path_dirs:
         # If a path...
@@ -154,7 +158,13 @@ def movie(movie_types, paths, **kwargs):
         kwargs['out_path'] = out_path
 
         for movie_type in movie_types.split(","):
-            frame_dir = os.path.join(os.getcwd().replace(base_path, out_path), "frames_"+movie_type)
+            if out_path is None: # Hyerin (10/31/2022) use the output dir from the argument
+                print(os.getcwd())
+                frame_dir = os.path.abspath(kwargs['output_dir']) #
+                print(frame_dir)
+                kwargs['frame_dir'] = frame_dir
+            else:
+                frame_dir = os.path.join(os.getcwd().replace(base_path, out_path), "frames_"+movie_type)
             os.makedirs(frame_dir, exist_ok=True)
 
         try:
