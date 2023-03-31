@@ -133,7 +133,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
         var = wrap(var)
 
     # Use symlog only when we need it
-    if log and np.any(var < 0.0):
+    if log and np.any(var <= 0.0):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
@@ -212,6 +212,9 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         if 'symlog_' in var:
             log = True
             var = var.replace("symlog_","")
+        elif 'log_' in var:
+            log = True
+            var = var.replace("log_","")
         vname = var
 
     x, y = dump.grid.get_xy_locations(mesh=(shading == 'flat'), native=native)
@@ -224,7 +227,7 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         var = wrap(var)
 
     # Use symlog only when we need it
-    if log and np.any(var < 0.0):
+    if log and np.any(var <= 0.0):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
@@ -348,7 +351,7 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
     """Make adjacent plots with plot_xy and plot_xz, using the given pair of axes.
     Assumes axes are arranged left-to-right ax1, ax2
     """
-    kwargs_left = {**kwargs, **{'cbar': False}}
+    kwargs_left = {**kwargs, **{'cbar': True}} #False}}
     plot_xz(ax1, dump, var, **kwargs_left)
     # If we're not plotting in native coordinates, plot contours.
     # They are very unintuitive in native coords
@@ -363,7 +366,7 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
 def plot_diff_xy(ax, dump1, dump2, var, rel=False, **kwargs):
     if rel:
         plot_xy(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]),
-            label=pretty(var), **kwargs)
+            log=True, label=pretty(var), **kwargs)
     else:
         plot_xy(ax, dump1, np.abs(dump1[var] - dump2[var]),
             log=True, label=pretty(var), **kwargs)
@@ -371,7 +374,7 @@ def plot_diff_xy(ax, dump1, dump2, var, rel=False, **kwargs):
 def plot_diff_xz(ax, dump1, dump2, var, rel=False, **kwargs):
     if rel:
         plot_xz(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]),
-            label=pretty(var), **kwargs)
+            log=True, label=pretty(var), **kwargs)
     else:
         plot_xz(ax, dump1, np.abs(dump1[var] - dump2[var]),
             log=True, label=pretty(var), **kwargs)

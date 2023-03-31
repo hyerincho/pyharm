@@ -65,6 +65,7 @@ fns_dict = {# 4-vectors
             'sigma': lambda dump: dump['bsq'] / dump['RHO'],
             'u': lambda dump: dump['UU'],
             'h': lambda dump: enthalpy(dump),
+            's': lambda dump: entropy(dump),
             'FM': lambda dump: dump['RHO'] * dump['ucon'][1],
             'FE': lambda dump: -T_mixed(dump, 1, 0),
             'FE_EM': lambda dump: -TEM_mixed(dump, 1, 0),
@@ -95,6 +96,7 @@ fns_dict = {# 4-vectors
             'JE0': lambda dump: -T_mixed(dump, 0, 0),
             'JE1': lambda dump: -T_mixed(dump, 1, 0),
             'JE2': lambda dump: -T_mixed(dump, 2, 0),
+            'JE3Fl': lambda dump: -TFl_mixed(dump, 3, 0),
             'lam_MRI': lambda dump: lam_MRI(dump),
             'lam_MRI_old': lambda dump: lam_MRI_old(dump),
             'lam_MRI_transform': lambda dump: lam_MRI_transform(dump),
@@ -247,6 +249,9 @@ def lam_MRI_transform(dump):
 
 def enthalpy(dump):
     return 1 + dump['Pg'] + dump['u']
+
+def entropy(dump): # added by Hyerin (02/14/23)
+    return dump['p']/np.power(dump['rho'],dump['gam'])
 
 def jet_psi(dump):
     sig = dump['sigma']

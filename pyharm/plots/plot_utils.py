@@ -37,6 +37,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors, ticker
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import pdb
 
 __doc__ = """Generic utilities and plot types -- anything plotting-related which is
 potentially useful (or indeed stolen from) outside pyharm
@@ -56,8 +57,11 @@ def pcolormesh_symlog(ax, X, Y, Z, vmax=None, vmin=None, linthresh=None, decades
             vmax = -vmin
         else:
             vmax = np.abs(np.nanmax(Z))*2
+            if vmax == 0: 
+              vmax = 1e-10 # Hyerin (03/01/23)
             vmin = -vmax
-            #print("Using automatic range {} to {}".format(vmin, vmax))
+            print("Using automatic range {} to {}".format(vmin, vmax))
+            #pdb.set_trace()
     else:
         vmin = -vmax
 
