@@ -168,9 +168,7 @@ def movie(movie_types, paths, **kwargs):
 
         for movie_type in movie_types.split(","):
             if out_path is None: # Hyerin (10/31/2022) use the output dir from the argument
-                print(os.getcwd())
                 frame_dir = os.path.abspath(kwargs['output_dir']) #
-                print(frame_dir)
                 kwargs['frame_dir'] = frame_dir
             else:
                 frame_dir = os.path.join(os.getcwd().replace(base_path, out_path), "frames_"+movie_type)

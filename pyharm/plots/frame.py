@@ -47,6 +47,8 @@ from .plot_dumps import *
 from .overlays import *
 from .pretty import pretty
 
+import pdb
+
 __doc__ = \
 """Generate one frame of a movie.  Currently pretty useless outside `pyharm-movie` script,
 included in pyharm so as to be imported there easily.
@@ -70,6 +72,7 @@ def frame(fname, diag, kwargs):
     # and which will include ghosts
     movie_types = []
     ghost_zones = False
+    ghost_zones = kwargs["ghost_zones"] # Hyerin (12/27/22)
     for movie_type in kwargs['movie_types'].split(","):
         if kwargs['out_path'] is None: # Hyerin (10/31/2022): if none, just use the dir from the argument (see ../scripts/pyharm-movie)
             frame_folder = kwargs['frame_dir']
@@ -79,12 +82,7 @@ def frame(fname, diag, kwargs):
             time_formatted = ("%.2f"%tdump).rjust(kwargs['time_digits'],'0')
             frame_name = os.path.join(frame_folder, "frame_t"+time_formatted+".png")
         else:
-<<<<<<< HEAD
-            time_formatted = ("%d"%int(tdump)).rjust(kwargs['time_digits'],'0')
-            frame_name = os.path.join(frame_folder, "frame_t"+time_formatted+".png")
-=======
             frame_name = os.path.join(frame_folder, "frame_t%013d.png" % int(tdump))
->>>>>>> my modifications
 
         if 'resume' in kwargs and kwargs['resume'] and os.path.exists(frame_name):
             continue
@@ -147,6 +145,8 @@ def frame(fname, diag, kwargs):
                 #else:
                 #    sz = dump['r_out']
                 sz = dump['r_out']
+                if ghost_zones:
+                  sz*=1.1
 
         # Choose a centered window
         # TODO 'half' and similar args for non-centered windows
@@ -230,8 +230,9 @@ def frame(fname, diag, kwargs):
                 ax = ax_slc[0]
                 var = movie_type
                 #print("Plotting slices. plotrc: ", plotrc)
-                if "divB" in var:
+                if "divB" == var:
                     var = dump[var]
+                #print("vmin vmax = {} {} ".format(plotrc['vmin'],plotrc['vmax']))
                 plot_slices(ax_slc[0], ax_slc[1], dump, var, **plotrc) # We'll plot the field ourselves
 
             if no_margin:
@@ -259,6 +260,8 @@ def frame(fname, diag, kwargs):
             # If the figure didn't set a title and we should...
             if "divB" in movie_type:
                 # Special title for diagnostic divB
+                if "symlog" in movie_type:
+                    movie_type = movie_type.replace("symlog_","")
                 divb = dump[movie_type]
                 divb_max = np.max(divb)
                 divb_argmax = np.argmax(divb)
