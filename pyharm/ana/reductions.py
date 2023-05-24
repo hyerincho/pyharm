@@ -182,7 +182,7 @@ def shell_sum(dump, var, at_r=None, at_i=None, th_slice=None, j_slice=None, mask
         j_slice = slice(None)
 
     if isinstance(var, str):
-        var = dump[i_slice, j_slice, :][var]
+        var = dump[var][i_slice, j_slice, :]
     else:
         var = var[i_slice, j_slice, :]
 

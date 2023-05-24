@@ -107,8 +107,8 @@ def _get_filter_class(fname):
         # HARM ASCII files are *usually* named "dump" with a number
         return HARM2DFile
     else:
-        print("Guessing filetype harm2d!")
-        return HARM2DFile
+        print("Guessing filetype KHARMA!")
+        return KHARMAFile
 
 def get_dump_time(fname):
     """Quickly get just the simulation time represented in the dump file.

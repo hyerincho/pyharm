@@ -162,9 +162,9 @@ def prims(fig, dump, diag, plotrc, log=True, simple=False, type="poloidal"):
     if simple:
         plotrc.update({'xlabel': False, 'ylabel': False,
                        'xticks': [], 'yticks': [],
-                       'cbar': False, 'frame': False, 'no_title': True})
+                       'cbar': False, 'frame': False, 'no_title': True, 'log': log})
     for i,var in enumerate(['RHO', 'UU', 'U1', 'U2', 'U3', 'B1', 'B2', 'B3']):
-        fn(ax_slc(i+1), dump, var, log=log, **plotrc)
+        fn(ax_slc(i+1), dump, var, **plotrc) #, log=log
     if simple:
         fig.subplots_adjust(hspace=0, wspace=0, left=0, right=1, bottom=0, top=0.95)
     return fig
@@ -333,7 +333,7 @@ def floors(fig, dump, diag, plotrc):
     ax_slc = lambda i: plt.subplot(2, 5, i)
     plotrc['xlabel'] = False
     plotrc['xticks'] = []
-    plot_xz(ax_slc(1), dump, 'rho', log=True, **plotrc)
+    plot_xz(ax_slc(1), dump, 'rho', log=True, **plotrc) # 'Theta'
     plotrc['vmin'] = 0
     plotrc['vmax'] = 20
     plotrc['cmap'] = 'Reds'

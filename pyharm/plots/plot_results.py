@@ -54,7 +54,7 @@ def plot_hst(ax, diag, var, tline=None, xticklabels=None, xlabel=None, **kwargs)
     ax.legend(loc='upper left')
     ax.grid(True)
 
-    ax.set_xlim((diag['t'][0], diag['t'][-1]))
+    #ax.set_xlim((diag['t'][0], diag['t'][-1]))
 
     # This will be the easier way to add whatever
     if xticklabels is not None:

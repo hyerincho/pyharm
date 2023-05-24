@@ -48,6 +48,7 @@ from .overlays import *
 from .pretty import pretty
 
 import pdb
+import glob
 
 __doc__ = \
 """Generate one frame of a movie.  Currently pretty useless outside `pyharm-movie` script,
@@ -104,6 +105,20 @@ def frame(fname, diag, kwargs):
     # This just attaches the file and creates a grid.  We do need to specify
     # if any movie will need ghosts, for the index math
     dump = FluidDump(fname, ghost_zones=ghost_zones, grid_cache=(not kwargs['no_grid_cache']))
+    
+    dump_fill=None
+    fill_arr=[]
+    if kwargs['fill']!='-1':
+      fill_nums=kwargs['fill'].split(',')
+      fill_arr=np.array([int(num) for num in fill_nums])
+      print(fill_arr)
+      splitted=fname.split('/')
+      fname_dir=fname.replace(splitted[-2]+'/'+splitted[-1],'')
+      fname_type=fname.split('.')[-1]
+      dump_fill=[]
+      for fn in fill_arr:
+          fname_fill=glob.glob(fname_dir+'bondi_multizone_{:05d}'.format(fn)+'/*final.'+fname_type)[0]
+          dump_fill+=[FluidDump(fname_fill, ghost_zones=ghost_zones, grid_cache=(not kwargs['no_grid_cache']))]
 
     for movie_type in movie_types:
         # Set some plot options
@@ -111,7 +126,7 @@ def frame(fname, diag, kwargs):
         # Copy in the equivalent options, casting them to what below code expects
         for key in ('vmin', 'vmax', 'xmin', 'xmax', 'ymin', 'ymax', # float
                     'left', 'right', 'top', 'bottom', 'wspace', 'hspace', # float
-                    'at', 'nlines', # int
+                    'at', 'nlines', 'fill', # int
                     'native', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r', # bool
                     'shading', 'cmap'): # string
             if key in kwargs:
@@ -129,6 +144,9 @@ def frame(fname, diag, kwargs):
                 if key in ('native', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r'):
                     # Should be bools
                     plotrc[key] = bool(plotrc[key])
+        
+        plotrc['fill']=fill_arr
+        plotrc['dump_fill']=dump_fill
 
         # Choose a domain size 
         if kwargs['size'] is not None:
@@ -137,6 +155,8 @@ def frame(fname, diag, kwargs):
             if 'r_out' not in dump.params:
                 # Exotic. Try plotting the whole domain
                 sz = None
+            elif plotrc["native"]:
+                sz=None #np.log10(dump["r_out"])
             else:
                 # Mediocre heuristic for "enough" of domain.
                 # Users should specify
@@ -145,6 +165,8 @@ def frame(fname, diag, kwargs):
                 #else:
                 #    sz = dump['r_out']
                 sz = dump['r_out']
+                if plotrc['log_r']:
+                  sz=np.log10(sz)
                 if ghost_zones:
                   sz*=1.1
 
@@ -247,7 +269,12 @@ def frame(fname, diag, kwargs):
         # OVERLAYS
         if 'overlay_field' in kwargs and kwargs['overlay_field'] and not ('native' in plotrc and plotrc['native']):
             nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
-            overlay_field(ax, dump, nlines=nlines)
+            overlay_field(ax, dump, nlines=nlines, **plotrc)
+        if 'overlay_quiver' in kwargs and kwargs['overlay_quiver'] and ('native' in plotrc and plotrc['native']): # added by Hyerin (05/03/23)
+            overlay_quiver(ax, dump, **plotrc)
+        #if 'overlay_flow' in kwargs and kwargs['overlay_flow'] and not ('native' in plotrc and plotrc['native']):
+        #    nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
+        #    overlay_flowlines(ax, dump, dump["rho"]*dump["u^1"], dump["rho"]*dump["u^2"], nlines=nlines)
         if 'overlay_grid' in kwargs and kwargs['overlay_grid']:
             overlay_grid(ax, dump.grid)
         # TODO contours

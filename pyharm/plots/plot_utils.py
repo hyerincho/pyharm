@@ -62,8 +62,10 @@ def pcolormesh_symlog(ax, X, Y, Z, vmax=None, vmin=None, linthresh=None, decades
             vmin = -vmax
             print("Using automatic range {} to {}".format(vmin, vmax))
             #pdb.set_trace()
-    else:
-        vmin = -vmax
+    elif vmax == 0:
+        vmax=-vmin
+    #else:
+    #    vmin = -vmax
 
     int_min_pow, int_max_pow = int(np.ceil(np.log10(-vmin))), int(np.ceil(np.log10(vmax)))
 

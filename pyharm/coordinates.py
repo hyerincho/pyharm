@@ -351,15 +351,15 @@ class KS(CoordinateSystem):
         return self.r(x), self.th(x), self.phi(x)
 
     def cart_x(self, x, log_r=False):
-        r = np.log(self.r(x)) if log_r else self.r(x)
+        r = np.log10(self.r(x)) if log_r else self.r(x)
         return r*np.sin(self.th(x))*np.cos(self.phi(x))
 
     def cart_y(self, x, log_r=False):
-        r = np.log(self.r(x)) if log_r else self.r(x)
+        r = np.log10(self.r(x)) if log_r else self.r(x)
         return r*np.sin(self.th(x))*np.sin(self.phi(x))
 
     def cart_z(self, x, log_r=False):
-        r = np.log(self.r(x)) if log_r else self.r(x)
+        r = np.log10(self.r(x)) if log_r else self.r(x)
         return r*np.cos(self.th(x))
 
     def dxdX(self, x):
@@ -445,6 +445,77 @@ class EKS(KS):
         dxdX = np.zeros([4, 4, *x.shape[1:]])
         dxdX[0, 0] = 1
         dxdX[1, 1] = np.exp(x[1])
+        dxdX[2, 2] = 1
+        dxdX[3, 3] = 1
+        return dxdX
+
+# superexponential added by Hyerin (04/06/23)
+class SEKS(KS):
+    def __init__(self, met_params=default_met_params):
+        self.a = met_params['a']
+        self.r_br = float(met_params['r_br'])
+        self.npow = met_params['npow']
+        self.cpow = met_params['cpow']
+
+        # For avoiding coordinate singularity
+        # We can usually leave this default
+        if 'small_theta' in met_params:
+            self.small_th = met_params['small_theta']
+        else:
+            self.small_th = 1.e-20
+
+        # Set radii
+        self.r_eh = 1. + np.sqrt(1. - self.a ** 2)
+        z1 = 1. + (1. - self.a**2)**(1/3) * ((1. + self.a)**(1/3) + (1. - self.a)**(1. / 3.))
+        z2 = np.sqrt(3. * self.a**2 + z1**2)
+        self.r_isco = 3. + z2 - (np.sqrt((3. - z1) * (3. + z1 + 2. * z2))) * np.sign(self.a)
+
+    def native_startx(self, met_params):
+        # TODO take direct 'startx' from met params?
+        if 'startx1' in met_params and 'startx2' in met_params and 'startx3' in met_params:
+            startx = np.array([0, met_params['startx1'], met_params['startx2'], met_params['startx3']])
+        elif 'r_in' in met_params:
+            # Set startx1 from r_in
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1tot' in met_params and 'r_out' in met_params:
+            # Else via a guess, which we propagate back to the originating parameter file
+            met_params['r_in'] = np.exp((met_params['n1tot'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                    (-1. + met_params['n1tot'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1' in met_params and 'r_out' in met_params:
+            # Or a more questionable guess
+            met_params['r_in'] = np.exp((met_params['n1'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                    (-1. + met_params['n1'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        else:
+            print("The only parameters provided to native_startx were: ", met_params)
+            raise ValueError("Cannot find or guess startx!")
+        return startx
+
+    def native_stopx(self, met_params):
+        if 'r_out' in met_params:
+            return np.array([0, np.log(met_params['r_out']), np.pi, 2*np.pi])
+        elif ('startx1' in met_params and 'dx1' in met_params and 'n1' in met_params and
+               'startx2' in met_params and 'dx2' in met_params and 'n2' in met_params and
+               'startx3' in met_params and 'dx3' in met_params and 'n3' in met_params):
+            return np.array([0, met_params['startx1'] + met_params['n1']*met_params['dx1'],
+                            met_params['startx2'] + met_params['n2']*met_params['dx2'],
+                            met_params['startx3'] + met_params['n3']*met_params['dx3']])
+        else:
+            raise ValueError("Cannot find or guess stopx!")
+
+
+    def r(self, x):
+        super_dist = x[1] - np.log(self.r_br)
+        super_dist[super_dist<0]=0.
+        return np.exp(x[1] + (super_dist > 0) * self.cpow * np.power(super_dist, self.npow))
+
+    def dxdX(self, x):
+        super_dist = x[1] - np.log(self.r_br)
+        super_dist[super_dist<0]=0.
+        dxdX = np.zeros([4, 4, *x.shape[1:]])
+        dxdX[0, 0] = 1
+        dxdX[1, 1] = np.exp(x[1] + (super_dist > 0) * self.cpow * np.power(super_dist, self.npow))* (1. + (super_dist > 0) *self.cpow * self.npow * np.power(super_dist, self.npow-1.))
         dxdX[2, 2] = 1
         dxdX[3, 3] = 1
         return dxdX

@@ -34,6 +34,7 @@ __license__ = """
 
 from scipy.integrate import trapz
 
+import matplotlib as mpl
 from matplotlib.patches import Circle
 
 from ..ana.reductions import flatten_xy, flatten_xz, wrap
@@ -114,7 +115,7 @@ def overlay_contours(ax, dump, var, levels, color='k', native=False, half_cut=Fa
 def overlay_field(ax, dump, **kwargs):
         overlay_flowlines(ax, dump, 'B1', 'B2', **kwargs)
 
-def overlay_flowlines(ax, dump, varx1, varx2, nlines=20, color='k', native=False, half_cut=False, reverse=False, **kwargs):
+def overlay_flowlines(ax, dump, varx1, varx2, nlines=20, color='k', native=False, half_cut=False, reverse=False, log_r=False, **kwargs):
     """Overlay the "flow lines" of a pair of variables in X1 and X2 directions.  Sums assuming no divergence to obtain a
     potential, then plots contours of the potential so as to total 'nlines' total contours.
     """
@@ -122,7 +123,7 @@ def overlay_flowlines(ax, dump, varx1, varx2, nlines=20, color='k', native=False
     if native:
         half_cut = True
 
-    x, z = dump.grid.get_xz_locations(native=native, half_cut=half_cut)
+    x, z = dump.grid.get_xz_locations(native=native, half_cut=half_cut, log_r=log_r)
     varx1 = flatten_xz(dump, varx1, sum=True, half_cut=True) / dump['n3'] * np.squeeze(dump['gdet'])
     varx2 = flatten_xz(dump, varx2, sum=True, half_cut=True) / dump['n3'] * np.squeeze(dump['gdet'])
 
@@ -145,17 +146,25 @@ def overlay_flowlines(ax, dump, varx1, varx2, nlines=20, color='k', native=False
                      trapz(varx1[i, j:], dx=dump['dx2']))
     AJ_phi -= AJ_phi.min()
     levels = np.linspace(0, AJ_phi.max(), nlines * 2)
+    # 3.7 for onezone
+    # -0.1,0.05
+    #print(AJ_phi.min(),AJ_phi.max())
+    #levels = np.linspace(-5, 0.5, nlines * 2)
+    #levels = np.linspace(-0.6, 0.5, nlines * 2)
+    #mpl.rcParams['contour.negative_linestyle'] = 'solid'
 
     if half_cut:
         AJ_phi = AJ_phi[:,:N2]
+    #if log_r:
+    #    AJ_phi = np.log10(AJ_phi)
 
     ax.contour(x, z, AJ_phi, levels=levels, colors=color)
 
 
 def overlay_quiver(ax, dump, varx1, varx2, cadence=64, norm=1):
     """Overlay a quiver plot of 2 vector components onto a plot in *native coordinates only*."""
-    varx1 = flatten_xz(dump, varx1, sum=True) / dump['n3'] * dump['gdet']
-    varx2 = flatten_xz(dump, varx2, sum=True) / dump['n3'] * dump['gdet']
+    varx1 = flatten_xz(dump, varx1, sum=True, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
+    varx2 = flatten_xz(dump, varx2, sum=True, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0]
     max_J = np.max(np.sqrt(varx1 ** 2 + varx2 ** 2))
 
     x, z = dump.grid.get_xz_locations(native=True)
@@ -164,5 +173,5 @@ def overlay_quiver(ax, dump, varx1, varx2, cadence=64, norm=1):
     s2 = dump['n2'] // cadence
 
     ax.quiver(x[::s1, ::s2], z[::s1, ::s2], varx1[::s1, ::s2], varx2[::s1, ::s2],
-              units='xy', angles='xy', scale_units='xy', scale=(cadence * max_J / norm))
+              units='width', angles='xy', scale_units='inches', scale=2)#, scale=(cadence * max_J / norm)) #'xy''xy'
 

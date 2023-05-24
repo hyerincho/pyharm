@@ -51,7 +51,7 @@ For full figures with default annotations, variable choices, etc, see ``figures.
 
 def _decorate_plot(ax, dump, var, bh=True, xticks=None, yticks=None, frame=True,
                   cbar=True, cbar_ticks=None, cbar_label=None,
-                  label=None, **kwargs):
+                  label=None, log_r=False, **kwargs):
     """Add any extras to plots which are not dependent on data or slicing.
     Accepts arbitrary extra arguments for compatibility -- they are passed nowhere.
     
@@ -70,8 +70,12 @@ def _decorate_plot(ax, dump, var, bh=True, xticks=None, yticks=None, frame=True,
 
     if bh and ("minkowski" not in dump['coordinates']) and ("cartesian" not in dump['coordinates']):
         # BH silhouette
-        circle1 = plt.Circle((0, 0), dump['r_eh'], color='k')
+        r_eh=dump['r_eh']
+        if log_r:
+            r_eh=np.log10(r_eh)
+        circle1 = plt.Circle((0, 0), r_eh, color='k')
         ax.add_artist(circle1)
+    
 
     if cbar:
         divider = make_axes_locatable(ax)
@@ -114,9 +118,11 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
     """
 
     vname = None
+    symlog=False
     if isinstance(var, str):
         if 'symlog_' in var:
             log = True
+            symlog=True
             var = var.replace("symlog_","")
         elif 'log_' in var:
             log = True
@@ -133,7 +139,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
         var = wrap(var)
 
     # Use symlog only when we need it
-    if log and np.any(var <= 0.0):
+    if symlog or (log and np.any(var <= 0.0)):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
@@ -190,7 +196,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
         var = vname
         if log:
             var = "log_"+var
-    _decorate_plot(ax, dump, var, cbar=cbar, **kwargs)
+    _decorate_plot(ax, dump, var, cbar=cbar, log_r=log_r, **kwargs)
 
     # In case user wants to tweak this
     return mesh
@@ -217,9 +223,11 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         return None
 
     vname = None
+    symlog=False
     if isinstance(var, str):
         if 'symlog_' in var:
             log = True
+            symlog=True
             var = var.replace("symlog_","")
         elif 'log_' in var:
             log = True
@@ -236,7 +244,7 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         var = wrap(var)
 
     # Use symlog only when we need it
-    if log and np.any(var <= 0.0):
+    if symlog or (log and np.any(var <= 0.0)):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
@@ -261,8 +269,10 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             ax.set_xlim(window[:2])
             ax.set_ylim(window[2:])
         else:
-            ax.set_xlim([x[0,0], x[-1,-1]])
-            ax.set_ylim([y[0,0], y[-1,-1]])
+            #ax.set_xlim([x[0,0], x[-1,-1]])
+            #ax.set_ylim([y[0,0], y[-1,-1]]) # modified by Hyerin (05/03/23)
+            ax.set_xlim([np.min(x), np.max(x)])
+            ax.set_ylim([np.min(y), np.max(y)])
     elif log_r:
         if xlabel: ax.set_xlabel(r"$x$ ($r \rightarrow \log_{10}(r)$)")
         if ylabel: ax.set_ylabel(r"$y$ ($r \rightarrow \log_{10}(r)$)")
@@ -294,7 +304,7 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         var = vname
         if log:
             var = "log_"+var
-    _decorate_plot(ax, dump, var, cbar=cbar, **kwargs)
+    _decorate_plot(ax, dump, var, cbar=cbar, log_r=log_r, **kwargs)
 
     # In case user wants to tweak this
     return mesh
@@ -376,29 +386,85 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
     Assumes axes are arranged left-to-right ax1, ax2
     """
     kwargs_left = {**kwargs, **{'cbar': True}} #False}}
+    # If we specified 'at', it was *certainly* for the xz slice, not this one.
+    # TODO separate option when calling this/plot_xy that will disambiguate?
+    kwargs_right = {**kwargs, **{'at': None}}
+
+    # background
+    if "fill" in kwargs:
+      if len(kwargs['fill']) > 0:
+        for df in kwargs['dump_fill']:
+          kwargs_left_fill = {**kwargs, **{'cbar': False}}
+          kwargs_right_fill = {**kwargs_right, **{'cbar': False}}
+          plot_xz(ax1, df, var, **kwargs_left_fill)
+          plot_xy(ax2, df, var, **kwargs_right_fill)
+
     plot_xz(ax1, dump, var, **kwargs_left)
     # If we're not plotting in native coordinates, plot contours.
     # They are very unintuitive in native coords
     if field_overlay and not ('native' in kwargs.keys() and kwargs['native']):
         overlay_field(ax1, dump, nlines=nlines)
-
-    # If we specified 'at', it was *certainly* for the xz slice, not this one.
-    # TODO separate option when calling this/plot_xy that will disambiguate?
-    kwargs_right = {**kwargs, **{'at': None}}
     plot_xy(ax2, dump, var, **kwargs_right)
+    
+    if "log_r" in kwargs:
+      if kwargs['log_r']: # Hyerin (03/31/23) show where the simulation box is
+        r_in=np.log10(dump["r_in"])
+        r_out=np.log10(dump["r_out"])
+        lw = 3
+        cl='k'
+        circle_in = plt.Circle((0,0), r_in, color=cl, fill=False, lw=lw)
+        circle_out = plt.Circle((0,0), r_out, color=cl, fill=False, lw=lw)
+        ax1.add_artist(circle_in)
+        ax1.add_artist(circle_out)
+        circle_in = plt.Circle((0,0), r_in, color=cl, fill=False, lw=lw)
+        circle_out = plt.Circle((0,0), r_out, color=cl, fill=False, lw=lw)
+        ax2.add_artist(circle_in)
+        ax2.add_artist(circle_out)
 
 def plot_diff_xy(ax, dump1, dump2, var, rel=False, **kwargs):
-    if rel:
-        plot_xy(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]),
-            log=True, label=pretty(var), **kwargs)
+    if np.shape(dump1[var])!=np.shape(dump2[var]):
+      # a general case where the simulation ranges are different
+      if np.shape(dump1[var])[0] > np.shape(dump2[var])[0]:
+        i_start=np.argmin(abs(dump2["r1d"][0]-dump1["r1d"]))
+        i_end=np.argmin(abs(dump2["r1d"][-1]-dump1["r1d"]))+1
+        dump1_var=dump1[var][i_start:i_end,:,:]
+        dump2_var=dump2[var]
+      else:
+        i_start=np.argmin(abs(dump1["r1d"][0]-dump2["r1d"]))
+        i_end=np.argmin(abs(dump1["r1d"][-1]-dump2["r1d"]))+1
+        dump1_var=dump1[var]
+        dump2_var=dump2[var][i_start:i_end,:,:]
     else:
-        plot_xy(ax, dump1, np.abs(dump1[var] - dump2[var]),
-            log=True, label=pretty(var), **kwargs)
+      dump1_var=dump1[var]
+      dump2_var=dump2[var]
+    #i_start=32
+    #i_end=96
+    if rel:
+        plot_xy(ax, dump1, np.abs((dump1_var - dump2_var)/dump1_var),
+            label=pretty(var), **kwargs)
+    else:
+        plot_xy(ax, dump1, np.abs(dump1_var - dump2_var),
+            label=pretty(var), **kwargs)
 
 def plot_diff_xz(ax, dump1, dump2, var, rel=False, **kwargs):
-    if rel:
-        plot_xz(ax, dump1, np.abs((dump1[var] - dump2[var])/dump1[var]),
-            log=True, label=pretty(var), **kwargs)
+    if np.shape(dump1[var])!=np.shape(dump2[var]):
+      # a general case where the simulation ranges are different
+      if np.shape(dump1[var])[0] > np.shape(dump2[var])[0]:
+        i_start=np.argmin(abs(dump2["r1d"][0]-dump1["r1d"]))
+        i_end=np.argmin(abs(dump2["r1d"][-1]-dump1["r1d"]))+1
+        dump1_var=dump1[var][i_start:i_end,:,:]
+        dump2_var=dump2[var]
+      else:
+        i_start=np.argmin(abs(dump1["r1d"][0]-dump2["r1d"]))
+        i_end=np.argmin(abs(dump1["r1d"][-1]-dump2["r1d"]))+1
+        dump1_var=dump1[var]
+        dump2_var=dump2[var][i_start:i_end,:,:]
     else:
-        plot_xz(ax, dump1, np.abs(dump1[var] - dump2[var]),
-            log=True, label=pretty(var), **kwargs)
+      dump1_var=dump1[var]
+      dump2_var=dump2[var]
+    if rel:
+        plot_xz(ax, dump1, np.abs((dump1[var] - dump2_var)/dump1[var]),
+            label=pretty(var), **kwargs)
+    else:
+        plot_xz(ax, dump1, np.abs(dump1[var] - dump2_var),
+            label=pretty(var), **kwargs)
