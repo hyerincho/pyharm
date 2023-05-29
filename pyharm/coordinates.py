@@ -164,6 +164,16 @@ class CoordinateSystem(object):
         gcov_ks[3, 1] = gcov_ks[1, 3]
         gcov_ks[3, 3] = s2 * (rho2 + self.a ** 2 * s2 * (1. + 2. * r / rho2))
 
+        if 'ext_g' not in self.__dict__:
+            self.ext_g = False
+        if self.ext_g:
+            if (self.a>0):
+                print("WARNING: External gravity is not compatible with nonzero spin!");
+            gcov_ks[0, 0] -= 2. * self.Phi_g
+            gcov_ks[0, 1] -= 2. * self.Phi_g
+            gcov_ks[1, 0] -= 2. * self.Phi_g
+            gcov_ks[1, 1] -= 2. * self.Phi_g
+
         return gcov_ks
 
     def gcon_ks(self, x):
@@ -334,9 +344,14 @@ class Minkowski(CoordinateSystem):
         return np.zeros([4, 4, 4, *(x.shape[1:])])
 
 class KS(CoordinateSystem):
-    def __init__(self, met_params={'a': 0.9375}):
+    def __init__(self, met_params={'a': 0.9375, 'ext_g': False}):
         self.a = met_params['a']
         self.small_th = 1.e-20
+        self.ext_g = met_params['ext_g']
+        if self.ext_g:
+            A = 1.46797639e-8
+            B = 1.29411117
+            self.Phi_g = (A/(B-1.)) * (np.power(r,B-1.)-np.power(2.,B-1.))
 
     def r(self, x):
         return x[1]
@@ -723,8 +738,13 @@ class BHAC_MKS(CoordinateSystem):
         return dxdX
 
 class BL(CoordinateSystem):
-    def __init__(self, met_params={'a': 0.9375}):
+    def __init__(self, met_params={'a': 0.9375, 'ext_g': False}):
         self.a = met_params['a']
+        self.ext_g = met_params['ext_g']
+        if self.ext_g:
+            A = 1.46797639e-8
+            B = 1.29411117
+            self.Phi_g = (A/(B-1.)) * (np.power(r,B-1.)-np.power(2.,B-1.))
 
     def r(self, x):
         return x[1]
@@ -764,6 +784,14 @@ class BL(CoordinateSystem):
         gcov[1, 1] = mu / DD
         gcov[2, 2] = r2 * mu
         gcov[3, 3] = r2 * sth * sth * (1. + a2 / r2 + 2. * a2 * s2 / (r2 * r * mu))
+        
+        if 'ext_g' not in self.__dict__:
+            self.ext_g = False
+        if self.ext_g:
+            if (self.a>0):
+                print("WARNING: External gravity is not compatible with nonzero spin!");
+            gcov[0, 0] -= 2. * self.Phi_g
+            gcov[1, 1] *= DD / (1. - 2./r + 2.*Phi_g)
 
         return gcov
 
@@ -778,6 +806,9 @@ class BL(CoordinateSystem):
         dxdX[2, 2] = 1
         dxdX[3, 1] = self.a / (r**2 - 2.*r + self.a**2)
         dxdX[3, 3] = 1
+
+        if self.ext_g:
+            dxdX[0, 1] = (2./r - 2.*Phi_g)/(1. - 2./r + 2.*Phi_g)
         return dxdX
 
 class MKS3(CoordinateSystem):

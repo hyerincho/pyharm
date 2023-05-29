@@ -117,7 +117,7 @@ def frame(fname, diag, kwargs):
       fname_type=fname.split('.')[-1]
       dump_fill=[]
       for fn in fill_arr:
-          fname_fill=glob.glob(fname_dir+'bondi_multizone_{:05d}'.format(fn)+'/*final.'+fname_type)[0]
+          fname_fill=glob.glob(fname_dir+'*{:05d}'.format(fn)+'/*final.'+fname_type)[0]
           dump_fill+=[FluidDump(fname_fill, ghost_zones=ghost_zones, grid_cache=(not kwargs['no_grid_cache']))]
 
     for movie_type in movie_types:
