@@ -348,7 +348,7 @@ class KS(CoordinateSystem):
     def __init__(self, met_params={'a': 0.9375, 'ext_g': False}):
         self.a = met_params['a']
         self.small_th = 1.e-20
-        self.ext_g = met_params['ext_g']
+        self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
             self.A = 1.46797639e-8
             self.B = 1.29411117
@@ -412,10 +412,6 @@ class EKS(KS):
             self.small_th = met_params['small_theta']
         else:
             self.small_th = 1.e-20
-        #self.ext_g = met_params['ext_g']
-        #if self.ext_g:
-        #    self.A = 1.46797639e-8
-        #    self.B = 1.29411117
 
         # Set radii
         self.r_eh = 1. + np.sqrt(1. - self.a ** 2)
@@ -546,10 +542,6 @@ class MKS(KS):
         self.a = met_params['a']
         self.hslope = met_params['hslope']
         KS.__init__(self, met_params)
-        #self.ext_g = met_params['ext_g']
-        #if self.ext_g:
-        #    self.A = 1.46797639e-8
-        #    self.B = 1.29411117
 
         # For avoiding coordinate singularity
         # We can usually leave this default
@@ -751,7 +743,7 @@ class BHAC_MKS(CoordinateSystem):
 class BL(CoordinateSystem):
     def __init__(self, met_params={'a': 0.9375, 'ext_g': False}):
         self.a = met_params['a']
-        self.ext_g = met_params['ext_g']
+        self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
             self.A = 1.46797639e-8
             self.B = 1.29411117
@@ -802,7 +794,7 @@ class BL(CoordinateSystem):
                 print("WARNING: External gravity is not compatible with nonzero spin!");
             Phi_g = (self.A/(self.B-1.)) * (np.power(r,self.B-1.)-np.power(2.,self.B-1.))
             gcov[0, 0] -= 2. * Phi_g
-            gcov[1, 1] *= DD / (1. - 2./r + Phi_g)
+            gcov[1, 1] *= DD / (1. - 2./r + 2. * Phi_g)
 
         return gcov
 
