@@ -349,6 +349,9 @@ class KS(CoordinateSystem):
         self.a = met_params['a']
         self.small_th = 1.e-20
         self.ext_g = met_params['ext_g']
+        if self.ext_g:
+            self.A = 1.46797639e-8
+            self.B = 1.29411117
 
     def r(self, x):
         return x[1]
@@ -401,6 +404,7 @@ class KS(CoordinateSystem):
 class EKS(KS):
     def __init__(self, met_params=default_met_params):
         self.a = met_params['a']
+        KS.__init__(self, met_params)
 
         # For avoiding coordinate singularity
         # We can usually leave this default
@@ -408,10 +412,10 @@ class EKS(KS):
             self.small_th = met_params['small_theta']
         else:
             self.small_th = 1.e-20
-        self.ext_g = met_params['ext_g']
-        if self.ext_g:
-            self.A = 1.46797639e-8
-            self.B = 1.29411117
+        #self.ext_g = met_params['ext_g']
+        #if self.ext_g:
+        #    self.A = 1.46797639e-8
+        #    self.B = 1.29411117
 
         # Set radii
         self.r_eh = 1. + np.sqrt(1. - self.a ** 2)
@@ -472,6 +476,7 @@ class SEKS(KS):
         self.r_br = float(met_params['r_br'])
         self.npow = met_params['npow']
         self.cpow = met_params['cpow']
+        KS.__init__(self, met_params)
 
         # For avoiding coordinate singularity
         # We can usually leave this default
@@ -540,10 +545,11 @@ class MKS(KS):
     def __init__(self, met_params=default_met_params):
         self.a = met_params['a']
         self.hslope = met_params['hslope']
-        self.ext_g = met_params['ext_g']
-        if self.ext_g:
-            self.A = 1.46797639e-8
-            self.B = 1.29411117
+        KS.__init__(self, met_params)
+        #self.ext_g = met_params['ext_g']
+        #if self.ext_g:
+        #    self.A = 1.46797639e-8
+        #    self.B = 1.29411117
 
         # For avoiding coordinate singularity
         # We can usually leave this default
