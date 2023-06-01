@@ -796,7 +796,7 @@ class BL(CoordinateSystem):
                 print("WARNING: External gravity is not compatible with nonzero spin!");
             Phi_g = (self.A/(self.B-1.)) * (np.power(r,self.B-1.)-np.power(2.,self.B-1.))
             gcov[0, 0] -= 2. * Phi_g
-            gcov[1, 1] *= DD / (1. - 2./r + Phi_g)
+            gcov[1, 1] *= DD / (1. - 2./r + 2. * Phi_g)
 
         return gcov
 
