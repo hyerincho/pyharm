@@ -348,7 +348,7 @@ class KS(CoordinateSystem):
     def __init__(self, met_params={'a': 0.9375, 'ext_g': False}):
         self.a = met_params['a']
         self.small_th = 1.e-20
-        self.ext_g = met_params['ext_g']
+        self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
 
     def r(self, x):
         return x[1]
@@ -408,7 +408,7 @@ class EKS(KS):
             self.small_th = met_params['small_theta']
         else:
             self.small_th = 1.e-20
-        self.ext_g = met_params['ext_g']
+        self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
             self.A = 1.46797639e-8
             self.B = 1.29411117
@@ -540,7 +540,7 @@ class MKS(KS):
     def __init__(self, met_params=default_met_params):
         self.a = met_params['a']
         self.hslope = met_params['hslope']
-        self.ext_g = met_params['ext_g']
+        self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
             self.A = 1.46797639e-8
             self.B = 1.29411117
@@ -745,7 +745,7 @@ class BHAC_MKS(CoordinateSystem):
 class BL(CoordinateSystem):
     def __init__(self, met_params={'a': 0.9375, 'ext_g': False}):
         self.a = met_params['a']
-        self.ext_g = met_params['ext_g']
+        self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
             self.A = 1.46797639e-8
             self.B = 1.29411117
