@@ -268,8 +268,10 @@ def frame(fname, diag, kwargs):
 
         # OVERLAYS
         if 'overlay_field' in kwargs and kwargs['overlay_field'] and not ('native' in plotrc and plotrc['native']):
-            nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
-            overlay_field(ax, dump, nlines=nlines, **plotrc)
+            if 'nlines' not in plotrc:
+                plotrc['nlines']=20
+                plotrc['reverse']=True
+            overlay_field(ax, dump, **plotrc)
         if 'overlay_quiver' in kwargs and kwargs['overlay_quiver'] and ('native' in plotrc and plotrc['native']): # added by Hyerin (05/03/23)
             overlay_quiver(ax, dump, **plotrc)
         #if 'overlay_flow' in kwargs and kwargs['overlay_flow'] and not ('native' in plotrc and plotrc['native']):
