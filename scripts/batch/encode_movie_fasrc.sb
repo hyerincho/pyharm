@@ -1,0 +1,70 @@
+#!/bin/bash
+
+# Admin stuff
+#SBATCH -J encode_movies
+######SBATCH --account=bbhr-delta-cpu
+#SBATCH -t 3:00:00
+#SBATCH -N 1
+#SBATCH -p blackhole #test #
+#SBATCH -o ./out_movie
+#SBATCH -e ./err_movie
+
+# Nodes we want
+####SBATCH --tasks-per-node=128
+#SBATCH --cpus-per-task=1
+# ALWAYS reserve full nodes to mitigate memory leaks
+####SBATCH --exclusive
+#SBATCH --mem=0
+
+# modules 
+module purge
+module load centos6/0.0.1-fasrc01
+module load libav/11.6-fasrc01
+module load ffmpeg/4.0.2-fasrc02
+module load libvpx/1.7.0-fasrc01
+module list
+
+FPS=24 #10 #50 # frames rate
+quantity="symlog_u^r_over_uff_logr" #"log_rho_logr" #"log_beta_logr" #"symlog_u^th" #"symlog_u^phi" #"log_Theta" #"log_b" #
+
+# Trap on sigterm/int and kill everything we've spawned
+##trap "srun killall ffmpeg python python2 launcher" SIGTERM SIGINT
+
+# Work around Andes weirdness
+#export HOSTNAME=$(hostname)
+# Launcher vars. Adjust LAUNCHER_DIR with installation dir
+#export LAUNCHER_DIR=$HOME/libs/launcher
+#export LAUNCHER_PLUGIN_DIR=$LAUNCHER_DIR/plugins
+#export LAUNCHER_RMI=SLURM
+#export LAUNCHER_WORKDIR=$SCRATCH/launcher_workdir
+#export LAUNCHER_JOB_FILE=$LAUNCHER_WORKDIR/jobs_list.$(date +%s)
+# Control procs per node with *launcher*, not slurm
+export LAUNCHER_PPN=16
+export NTHREADS=$((128 / $LAUNCHER_PPN))
+# We don't want binding or static scheduling
+export LAUNCHER_BIND=1
+export LAUNCHER_BIND_HT=0
+#export LAUNCHER_SCHED=
+
+#mkdir -p $LAUNCHER_WORKDIR
+
+echo Using $NTHREADS threads
+
+# Iterate through directories recording movies to make
+#JOBFILE=$LAUNCHER_JOB_FILE
+#>$JOBFILE
+JOBFILE=test
+BASE_DIR="$(pwd)"
+folder="frames_${quantity}"
+if [ -d $folder ]
+then
+    cd $folder
+    echo Encoding $folder
+    ffmpeg -hide_banner -y -framerate ${FPS} -threads ${NTHREADS} -pattern_type glob -i "./frame_t*.png" -crf 30 -qscale 0 -pix_fmt yuv420p ./${folder}.mp4
+
+fi
+cd "$BASE_DIR"
+echo DONE! the movie is at ${folder}/${folder}.mp4
+
+# Process the list
+#$LAUNCHER_DIR/paramrun
