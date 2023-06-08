@@ -1,0 +1,51 @@
+#!/bin/bash
+# Admin stuff
+"""
+#SBATCH -J encode_movies
+#SBATCH -t 1:00:00
+#SBATCH -N 1
+#SBATCH -n 1
+#SBATCH -p small #development #
+#SBATCH -o ./out_movie
+#SBATCH -e ./err_movie
+#SBATCH -A AST22010
+
+# Nodes we want
+#SBATCH --mem=0
+#SBATCH --mail-type=ALL                                             # Type of email notification- BEGIN,END,FAIL,ALL
+#SBATCH --mail-user=hyerin.cho@cfa.harvard.edu                  # Email to which notifications will be sent
+"""
+
+# modules 
+module purge
+module load ffmpeg/4.3.2
+module list
+
+FPS=24 #10 #50 # frames rate
+quantity="symlog_u^r_over_uff_logr" #"log_vA_logr" #'log_cs_logr' #"log_rho_logr" #"log_beta_logr" #"symlog_u^th" #"symlog_u^phi" #"log_Theta" #"log_b" #
+
+# Control procs per node with *launcher*, not slurm
+export LAUNCHER_PPN=16
+export NTHREADS=$((128 / $LAUNCHER_PPN))
+# We don't want binding or static scheduling
+export LAUNCHER_BIND=1
+export LAUNCHER_BIND_HT=0
+
+echo Using $NTHREADS threads
+
+# Iterate through directories recording movies to make
+JOBFILE=test
+BASE_DIR="$(pwd)"
+folder="frames_${quantity}"
+if [ -d $folder ]
+then
+    cd $folder
+    echo Encoding $folder
+    ffmpeg -hide_banner -y -framerate ${FPS} -threads ${NTHREADS} -pattern_type glob -i "./frame_t*.png" -crf 30 -qscale 0 -pix_fmt yuv420p ./${folder}.mp4
+
+fi
+cd "$BASE_DIR"
+echo DONE! the movie is at ${folder}/${folder}.mp4
+
+# Process the list
+#$LAUNCHER_DIR/paramrun

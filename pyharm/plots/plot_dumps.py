@@ -128,8 +128,13 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
             log = True
             var = var.replace("log_","")
         vname = var
+        inv_uff = np.sqrt(dump["r"])
         if "u^r_over_uff" in var:
-            var = dump["u^r"]*np.sqrt(dump["r"])
+            var = dump["u^r"]*inv_uff
+        elif "vA_over_uff" in var:
+            var = dump["vA"]*inv_uff
+        elif "u^r2_over_rho" in var:
+            var = dump["u^r"]**2/dump["rho"]
 
     x, z = dump.grid.get_xz_locations(mesh=(shading == 'flat'), native=native, half_cut=(half_cut or native), log_r=log_r)
     var = flatten_xz(dump, var, at, sum or average, half_cut or native)
@@ -235,8 +240,13 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             log = True
             var = var.replace("log_","")
         vname = var
+        inv_uff = np.sqrt(dump["r"])
         if "u^r_over_uff" in var:
-            var = dump["u^r"]*np.sqrt(dump["r"])
+            var = dump["u^r"]*inv_uff
+        elif "vA_over_uff" in var:
+            var = dump["vA"]*inv_uff
+        elif "u^r2_over_rho" in var:
+            var = dump["u^r"]**2/dump["rho"]
 
     x, y = dump.grid.get_xy_locations(mesh=(shading == 'flat'), native=native, log_r=log_r)
     var = flatten_xy(dump, var, at, sum or average)
