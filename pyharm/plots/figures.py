@@ -259,47 +259,57 @@ def e_ratio_funnel(fig, dump, diag, plotrc):
                         label="Failures", **plotrc)
     return fig
 
-# def conservation(fig, dump, diag, plotrc):
-#     """TODO this is still WIP to restore. Later."""
-#     ax_slc = lambda i: plt.subplot(2, 4, i)
-#     ax_flux = lambda i: plt.subplot(4, 2, i)
-#     # Continuity plots to verify local conservation of energy, angular + linear momentum
-#     # Integrated T01: continuity for momentum conservation
-#     plotrc['native'] = True
-#     plotrc['vmin'] = 0
-#     plotrc['vmax'] = 2000
-#     plotrc['sum'] = True
-#     plot_slices(ax_slc(1), ax_slc(2), dump, 'JE1', label=r"$T^1_0$ Integrated")
+def conservation(fig, dump, diag, plotrc):
+     ax_slc = lambda i: plt.subplot(2, 4, i)
+     ax_flux = lambda i: plt.subplot(4, 2, i)
+     # Continuity plots to verify local conservation of energy, angular + linear momentum
+     # Integrated T01: continuity for momentum conservation
+     plotrc['log_r'] = True
+     plotrc['vmin'] = None #0
+     plotrc['vmax'] = None #2000
+     plotrc['sum'] = True
+     plot_slices(ax_slc(1), ax_slc(2), dump, 'log_JE1', label=r"$T^1_0$ Integrated", **plotrc)
 
-#     # integrated T00: continuity plot for energy conservation
-#     plotrc['vmax'] = 3000
-#     plot_slices(ax_slc(5), ax_slc(6), dump, 'JE0', label=r"$T^0_0$ Integrated")
+     # integrated T00: continuity plot for energy conservation
+     plotrc['vmax'] = None #3000
+     plot_slices(ax_slc(5), ax_slc(6), dump, 'log_JE0', label=r"$T^0_0$ Integrated", **plotrc)
 
-#     # Usual fluxes for reference
-#     #ppltr.plot_hst(ax_flux[1], diag, 'Mdot', tline=dump['t'], logy=MDOT)
+     # Usual fluxes for reference
+     #ppltr.plot_hst(ax_flux[1], diag, 'Mdot', tline=dump['t'], logy=MDOT)
 
-#     r_out = 100
+     r_out = dump["r_out"] #100
 
-#     # Radial conservation plots
-#     E_r = shell_sum(dump, T_mixed(dump, 0, 0))
-#     Ang_r = shell_sum(dump, T_mixed(dump, 0, 3))
-#     mass_r = shell_sum(dump, dump['ucon'][0] * dump['RHO'])
+     # Radial conservation plots
+     #E_r = shell_sum(dump, T_mixed(dump, 0, 0))
+     E_r = shell_sum(dump, dump["T^0_0"])
+     #Ang_r = shell_sum(dump, T_mixed(dump, 0, 3))
+     Ang_r = shell_sum(dump, dump["T^0_3"])
+     mass_r = shell_sum(dump, dump['ucon'][0] * dump['RHO'])
 
-#     max_e = 50000
-#     # TODO these will need some work to fully go to just ax.plot calls
-#     ax_flux(2).plot(dump['r1d'], np.abs(E_r), title='Conserved vars at R', ylim=(0, max_e), rlim=(0, r_out), label="E_r")
-#     ax_flux(2).plot(dump['r1d'], np.abs(Ang_r) / 10, ylim=(0, max_e), rlim=(0, r_out), color='r', label="L_r")
-#     ax_flux(2).plot(dump['r1d'], np.abs(mass_r), ylim=(0, max_e), rlim=(0, r_out), color='b', label="M_r")
-#     ax_flux(2).legend()
+     max_e = 50000
+     # TODO these will need some work to fully go to just ax.plot calls
+     ax_flux(2).plot(dump['r1d'], np.abs(E_r), label="E_r")#title='Conserved vars at R', ylim=(0, max_e), rlim=(0, r_out), 
+     ax_flux(2).plot(dump['r1d'], np.abs(Ang_r) / 10, color='r', label="L_r") #ylim=(0, max_e), rlim=(0, r_out), 
+     ax_flux(2).plot(dump['r1d'], np.abs(mass_r), 'b:', label="M_r") #ylim=(0, max_e), rlim=(0, r_out),
+     ax_flux(2).legend()
+     ax_flux(2).set_xscale('log'); ax_flux(2).set_yscale('symlog')
 
-#     # Radial energy accretion rate
-#     Edot_r = shell_sum(dump, T_mixed(dump, 1, 0))
-#     ax_flux(4).plot(dump['r1d'], Edot_r, label='Edot at R', ylim=(-200, 200), rlim=(0, r_out), native=True)
+     # Radial energy accretion rate
+     #Edot_r = shell_sum(dump, T_mixed(dump, 1, 0))
+     Edot_r = shell_sum(dump, dump["T^1_0"])
+     ax_flux(4).plot(dump['r1d'], Edot_r, label='Edot at R') #, ylim=(-200, 200), rlim=(0, r_out), native=True)
+     ax_flux(4).plot(dump['r1d'], shell_sum(dump,dump["FE_norho"]), 'r:', label='Edot-Mdot')
+     ax_flux(4).legend()
+     ax_flux(4).sharex(ax_flux(2))
+     ax_flux(4).set_xscale('log'); ax_flux(4).set_yscale('symlog')
 
-#     # Radial integrated failures
-#     ax_flux(6).plot(dump['r1d'], (dump['pflag'] > 0).sum(axis=(1, 2)), label='Fails at R', native=True, rlim=(0, r_out), ylim=(0, 1000))
+     # Radial integrated failures
+     ax_flux(6).plot(dump['r1d'], (dump['pflag'] > 0).sum(axis=(1, 2)), label='Fails at R')#, native=True, rlim=(0, r_out), ylim=(0, 1000))
+     ax_flux(6).set_xscale('log')
+     ax_flux(6).legend()
+     ax_flux(6).sharex(ax_flux(2))
 
-#     return fig
+     return fig
 
 def energies(fig, dump, diag, plotrc):
     """Energy scalars rho, u, b^2 plotted along with inversion failures

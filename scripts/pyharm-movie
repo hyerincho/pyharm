@@ -106,7 +106,7 @@ class ExtensibleCmd(click.Command):
 @click.option('-r', '--resume', is_flag=True, help="Continue a previous run, by skipping existing frames")
 @click.option('-d', '--debug', is_flag=True, help="Serial operation for debugging")
 @click.option('--nompi', is_flag=True, help="Avoid MPI even if available")
-@click.option('--fill', default="", help="which file numbers to fill the background with")
+@click.option('--fill', default="-1", help="which file numbers to fill the background with")
 #@click.option('-m', '--memory_limit', default=1, help="Memory limit in GB for each process, enforced by starting total/m processes.")
 def movie(movie_types, paths, **kwargs):
     """Generate movies of type MOVIE_TYPE from dumps at each of PATHS.
