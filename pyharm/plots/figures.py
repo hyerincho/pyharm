@@ -299,6 +299,7 @@ def conservation(fig, dump, diag, plotrc):
      Edot_r = shell_sum(dump, dump["T^1_0"])
      ax_flux(4).plot(dump['r1d'], Edot_r, label='Edot at R') #, ylim=(-200, 200), rlim=(0, r_out), native=True)
      ax_flux(4).plot(dump['r1d'], shell_sum(dump,dump["FE_norho"]), 'r:', label='Edot-Mdot')
+     ax_flux(4).plot(dump['r1d'], np.zeros(len(dump["r1d"])), 'k:')
      ax_flux(4).legend()
      ax_flux(4).sharex(ax_flux(2))
      ax_flux(4).set_xscale('log'); ax_flux(4).set_yscale('symlog')
