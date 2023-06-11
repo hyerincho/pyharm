@@ -235,7 +235,8 @@ def F_cov(dump, i, j):
 def bernoulli(dump, with_B=False):
     if with_B:
         #return -(T_mixed(dump, 0, 0) / dump['FM']) - 1
-        return np.sqrt( (-T_mixed(dump, 1, 0) / (dump['rho']*dump['u^1']))**2 - 1)
+        #return np.sqrt( (-T_mixed(dump, 1, 0) / (dump['rho']*dump['u^1']))**2 - 1)
+        return -(1 + (dump['gam'] * dump['UU'] + dump["bsq"]) / dump["RHO"]) * dump['ucov'][0] - 1
     else:
         return -(1 + dump['gam'] * dump['UU'] / dump['RHO']) * dump['ucov'][0] - 1
 
