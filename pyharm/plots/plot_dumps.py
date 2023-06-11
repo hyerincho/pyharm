@@ -128,13 +128,12 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
             log = True
             var = var.replace("log_","")
         vname = var
-        inv_uff = np.sqrt(dump["r"])
+        uff = 1./np.sqrt(dump["r"]) # free fall velocity
         if "u^r_over_uff" in var:
-            var = dump["u^r"]*inv_uff
-        elif "vA_over_uff" in var:
-            var = dump["vA"]*inv_uff
-        elif "u^r2_over_rho" in var:
-            var = dump["u^r"]**2/dump["rho"]
+            var = dump["u^r"]/uff
+        elif "u^r_over_uchar" in var:
+            cs0 = 1./dump["rs"] # sound speed at infinity
+            var = dump["u^r"]/np.sqrt(uff**2+cs0**2)
 
     x, z = dump.grid.get_xz_locations(mesh=(shading == 'flat'), native=native, half_cut=(half_cut or native), log_r=log_r)
     var = flatten_xz(dump, var, at, sum or average, half_cut or native)
@@ -240,13 +239,12 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             log = True
             var = var.replace("log_","")
         vname = var
-        inv_uff = np.sqrt(dump["r"])
+        uff = 1./np.sqrt(dump["r"]) # free fall velocity
         if "u^r_over_uff" in var:
-            var = dump["u^r"]*inv_uff
-        elif "vA_over_uff" in var:
-            var = dump["vA"]*inv_uff
-        elif "u^r2_over_rho" in var:
-            var = dump["u^r"]**2/dump["rho"]
+            var = dump["u^r"]/uff
+        elif "u^r_over_uchar" in var:
+            cs0 = 1./dump["rs"] # sound speed at infinity
+            var = dump["u^r"]/np.sqrt(uff**2+cs0**2)
 
     x, y = dump.grid.get_xy_locations(mesh=(shading == 'flat'), native=native, log_r=log_r)
     var = flatten_xy(dump, var, at, sum or average)
