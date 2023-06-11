@@ -405,8 +405,10 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
     kwargs_right = {**kwargs, **{'at': None}}
 
     # background
+    fill_bg = False
     if "fill" in kwargs:
       if len(kwargs['fill']) > 0:
+        fill_bg = True
         for df in kwargs['dump_fill']:
           kwargs_left_fill = {**kwargs, **{'cbar': False}}
           kwargs_right_fill = {**kwargs_right, **{'cbar': False}}
@@ -420,7 +422,7 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
         overlay_field(ax1, dump, nlines=nlines)
     plot_xy(ax2, dump, var, **kwargs_right)
     
-    if "log_r" in kwargs:
+    if "log_r" in kwargs and fill_bg:
       if kwargs['log_r']: # Hyerin (03/31/23) show where the simulation box is
         r_in=np.log10(dump["r_in"])
         r_out=np.log10(dump["r_out"])
