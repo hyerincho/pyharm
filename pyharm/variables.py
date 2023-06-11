@@ -244,7 +244,8 @@ def lam_MRI_old(dump):
     return (2*np.pi)/(dump['u^3']/dump['u^0']) * dump['b^th']/np.sqrt(dump['rho'] + dump['u'] + dump['p'] + dump['bsq'])
 
 def alfven_speed(dump):
-    return dump['b']/np.sqrt(4*np.pi*dump['rho'])
+    #return dump['b']/np.sqrt(4*np.pi*dump['rho'])
+    return dump['b']/np.sqrt(dump["bsq"] + dump['rho'] + dump["gam"] * dump["UU"])
 
 def lam_MRI(dump):
     return dump['vA'] / (dump['u^3']/dump['u^0'])
