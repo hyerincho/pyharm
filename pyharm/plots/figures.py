@@ -151,7 +151,7 @@ def traditional(fig, dump, diag, plotrc):
     fig.subplots_adjust(hspace=0.12, wspace=0.23, left=0.05, right=0.96, bottom=0.05, top=0.95)
     return fig
 
-def prims(fig, dump, diag, plotrc, log=True, simple=False, type="poloidal"):
+def prims(fig, dump, diag, plotrc, log=True, simple=True, type="poloidal"):
     """Each primitive variable in each of 8 panes
     """
     ax_slc = lambda i: plt.subplot(2, 4, i)
@@ -287,26 +287,33 @@ def conservation(fig, dump, diag, plotrc):
      mass_r = shell_sum(dump, dump['ucon'][0] * dump['RHO'])
 
      max_e = 50000
+     mdot_r = -shell_sum(dump, dump["FM"])
+     Edot_r = shell_sum(dump, dump["T^1_0"])
+     Ldot_r = shell_sum(dump, dump["T^1_3"])
      # TODO these will need some work to fully go to just ax.plot calls
-     ax_flux(2).plot(dump['r1d'], np.abs(E_r), label="E_r")#title='Conserved vars at R', ylim=(0, max_e), rlim=(0, r_out), 
-     ax_flux(2).plot(dump['r1d'], np.abs(Ang_r) / 10, color='r', label="L_r") #ylim=(0, max_e), rlim=(0, r_out), 
-     ax_flux(2).plot(dump['r1d'], np.abs(mass_r), 'b:', label="M_r") #ylim=(0, max_e), rlim=(0, r_out),
+     #ax_flux(2).plot(dump['r1d'], np.abs(E_r), label="E_r")#title='Conserved vars at R', ylim=(0, max_e), rlim=(0, r_out), 
+     #ax_flux(2).plot(dump['r1d'], np.abs(Ang_r) / 10, color='r', label="L_r") #ylim=(0, max_e), rlim=(0, r_out), 
+     #ax_flux(2).plot(dump['r1d'], np.abs(mass_r), 'b:', label="M_r") #ylim=(0, max_e), rlim=(0, r_out),
+     ax_flux(2).plot(dump['r1d'], -Ldot_r/mdot_r, "k:", label='-Ldot/Mdot')
+     ax_flux(2).plot(dump['r1d'], Ldot_r/mdot_r, "k-", label='+Ldot/Mdot')
      ax_flux(2).legend()
-     ax_flux(2).set_xscale('log'); ax_flux(2).set_yscale('symlog')
+     ax_flux(2).yaxis.tick_right()
+     ax_flux(2).set_xscale('log'); ax_flux(2).set_yscale('log')
 
      # Radial energy accretion rate
      #Edot_r = shell_sum(dump, T_mixed(dump, 1, 0))
-     Edot_r = shell_sum(dump, dump["T^1_0"])
-     ax_flux(4).plot(dump['r1d'], Edot_r, label='Edot at R') #, ylim=(-200, 200), rlim=(0, r_out), native=True)
-     ax_flux(4).plot(dump['r1d'], shell_sum(dump,dump["FE_norho"]), 'r:', label='Edot-Mdot')
-     ax_flux(4).plot(dump['r1d'], np.zeros(len(dump["r1d"])), 'k:')
+     ax_flux(4).plot(dump['r1d'], 1.-Edot_r/mdot_r, label='1-Edot/Mdot')
+     #ax_flux(4).plot(dump['r1d'], shell_sum(dump,dump["FE_norho"]), 'r:', label='Edot-Mdot')
+     #ax_flux(4).plot(dump['r1d'], np.zeros(len(dump["r1d"])), 'k:')
      ax_flux(4).legend()
+     ax_flux(4).yaxis.tick_right()
      ax_flux(4).sharex(ax_flux(2))
-     ax_flux(4).set_xscale('log'); ax_flux(4).set_yscale('symlog')
+     ax_flux(4).set_xscale('log'); ax_flux(4).set_yscale('log')
 
      # Radial integrated failures
      ax_flux(6).plot(dump['r1d'], (dump['pflag'] > 0).sum(axis=(1, 2)), label='Fails at R')#, native=True, rlim=(0, r_out), ylim=(0, 1000))
      ax_flux(6).set_xscale('log')
+     ax_flux(6).yaxis.tick_right()
      ax_flux(6).legend()
      ax_flux(6).sharex(ax_flux(2))
 
@@ -344,7 +351,7 @@ def floors(fig, dump, diag, plotrc):
     ax_slc = lambda i: plt.subplot(2, 5, i)
     plotrc['xlabel'] = False
     plotrc['xticks'] = []
-    plot_xz(ax_slc(1), dump, 'rho', log=True, **plotrc) # 'Theta'
+    plot_xz(ax_slc(1), dump, 'rho', **plotrc) # 'Theta', log=True
     plotrc['vmin'] = 0
     plotrc['vmax'] = 20
     plotrc['cmap'] = 'Reds'

@@ -101,6 +101,13 @@ def _decorate_plot(ax, dump, var, bh=True, xticks=None, yticks=None, frame=True,
     elif isinstance(var, str):
         ax.set_title(pretty(var))
 
+def nat2l10(x1):
+    return np.log10(np.exp(x1))
+
+def l102nat(lr):
+    return np.log(np.power(10.,lr))
+
+
 def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
             xlabel=True, ylabel=True, native=False, log=False,
             half_cut=False, cmap='jet', shading='gouraud',
@@ -129,11 +136,14 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
             var = var.replace("log_","")
         vname = var
         uff = 1./np.sqrt(dump["r"]) # free fall velocity
+        cs0 = 1./dump["rs"] # sound speed at infinity
+        uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
         if "u^r_over_uff" in var:
             var = dump["u^r"]/uff
         elif "u^r_over_uchar" in var:
-            cs0 = 1./dump["rs"] # sound speed at infinity
-            var = dump["u^r"]/np.sqrt(uff**2+cs0**2)
+            var = dump["u^r"]/uchar
+        elif "Beb_over_uff2" in var:
+            var = dump["Be_b"]/uff**2
 
     x, z = dump.grid.get_xz_locations(mesh=(shading == 'flat'), native=native, half_cut=(half_cut or native), log_r=log_r)
     var = flatten_xz(dump, var, at, sum or average, half_cut or native)
@@ -164,7 +174,10 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
                              shading=shading)
 
     if native:
-        if xlabel: ax.set_xlabel("X1 (native coordinates)")
+        secax = ax.secondary_xaxis('top', functions=(nat2l10, l102nat))
+        if xlabel: 
+            ax.set_xlabel("X1 (native coordinates)")
+            secax.set_xlabel("log r")
         if ylabel: ax.set_ylabel("X2 (native coordinates)")
         if window:
             ax.set_xlim(window[:2])
@@ -190,12 +203,11 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
             ax.set_ylim(window[2:])
         # TODO alt option of size -r_out to r_out?
 
-    # TODO do we ever not want this?
-    ax.set_aspect('equal')
+    if not native: ax.set_aspect('equal')
 
     # Set up arguments for decorating plot
-    if not 'bh' in kwargs:
-        kwargs['bh'] = not native
+    #if not 'bh' in kwargs:
+    kwargs['bh'] = not native
 
     # Restore "var" to string for labelling plots
     if vname is not None:
@@ -240,11 +252,15 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             var = var.replace("log_","")
         vname = var
         uff = 1./np.sqrt(dump["r"]) # free fall velocity
+        cs0 = 1./dump["rs"] # sound speed at infinity
+        uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
         if "u^r_over_uff" in var:
             var = dump["u^r"]/uff
         elif "u^r_over_uchar" in var:
-            cs0 = 1./dump["rs"] # sound speed at infinity
-            var = dump["u^r"]/np.sqrt(uff**2+cs0**2)
+            var = dump["u^r"]/uchar
+        elif "Beb_over_uff2" in var:
+            var = dump["Be_b"]/uff**2
+
 
     x, y = dump.grid.get_xy_locations(mesh=(shading == 'flat'), native=native, log_r=log_r)
     var = flatten_xy(dump, var, at, sum or average)
@@ -304,12 +320,11 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             # TODO guess this?
             pass
 
-    # TODO do we ever not want this?
-    ax.set_aspect('equal')
+    if not native: ax.set_aspect('equal')
 
     # Set up arguments for decorating plot
-    if not 'bh' in kwargs:
-        kwargs['bh'] = not native
+    #if not 'bh' in kwargs:
+    kwargs['bh'] = not native
 
     # Restore "var" to string for labelling plots
     if vname is not None:

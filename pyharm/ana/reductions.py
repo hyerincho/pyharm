@@ -175,7 +175,7 @@ def shell_sum(dump, var, at_r=None, at_i=None, th_slice=None, j_slice=None, mask
         i_slice = slice(None)
 
     if j_slice is not None:
-        j_slice = slice(j_slice[0], j_slice[1])
+        j_slice = j_slice#slice(j_slice[0], j_slice[1])
     elif th_slice is not None:
         j_slice = get_j_slice(dump, th_slice[0], th_slice[1])
     else:
