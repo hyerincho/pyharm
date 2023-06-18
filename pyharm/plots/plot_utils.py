@@ -66,7 +66,7 @@ def pcolormesh_symlog(ax, X, Y, Z, vmax=None, vmin=None, linthresh=None, decades
         vmax=-vmin
     #else:
     #    vmin = -vmax
-
+    
     int_min_pow, int_max_pow = int(np.ceil(np.log10(-vmin))), int(np.ceil(np.log10(vmax)))
 
     if linthresh is None:

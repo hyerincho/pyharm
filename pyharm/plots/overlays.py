@@ -160,11 +160,33 @@ def overlay_flowlines(ax, dump, varx1, varx2, nlines=20, color='k', native=False
 
     ax.contour(x, z, AJ_phi, levels=levels, colors=color)
 
+def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native=True):
+    """ Added by Hyerin (06/13/23) streamlines of flows"""
+    varx1 = flatten_xz(dump, varx1, sum=False, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
+    varx2 = flatten_xz(dump, varx2, sum=False, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0]
+    x, z = dump.grid.get_xz_locations(native=native)
+
+    s1 = np.maximum(dump['n1'] // cadence,1)
+    s2 = np.maximum(dump['n2'] // cadence,1)
+    ax.streamplot(np.transpose(x[::s1, ::s2]), np.transpose(z[::s1, ::s2]), np.transpose(varx1[::s1, ::s2]), np.transpose(varx2[::s1, ::s2]), color=color)
+
+def overlay_streamlines_xy(ax, dump, varx1, varx2, cadence=64, color='k', native=True):
+    """ Added by Hyerin (06/13/23) streamlines of flows"""
+    varx1 = flatten_xy(dump, varx1, sum=False) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
+    varx2 = flatten_xy(dump, varx2, sum=False) / dump['n3'] * dump['gdet'][:,:,0]
+    x, y = dump.grid.get_xy_locations(native=native)
+
+    s1 = np.maximum(dump['n1'] // cadence,1)
+    s2 = np.maximum(dump['n3'] // cadence,1)
+
+    ax.streamplot(np.transpose(x[::s1, ::s2]), np.transpose(y[::s1, ::s2]), np.transpose(varx1[::s1, ::s2]), np.transpose(varx2[::s1, ::s2]), color=color)
 
 def overlay_quiver(ax, dump, varx1, varx2, cadence=64, norm=1):
     """Overlay a quiver plot of 2 vector components onto a plot in *native coordinates only*."""
-    varx1 = flatten_xz(dump, varx1, sum=True, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
-    varx2 = flatten_xz(dump, varx2, sum=True, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0]
+    #varx1 = flatten_xz(dump, varx1, sum=True, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
+    #varx2 = flatten_xz(dump, varx2, sum=True, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0]
+    varx1 = flatten_xz(dump, varx1, sum=False, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
+    varx2 = flatten_xz(dump, varx2, sum=False, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0]
     max_J = np.max(np.sqrt(varx1 ** 2 + varx2 ** 2))
 
     x, z = dump.grid.get_xz_locations(native=True)
@@ -172,6 +194,8 @@ def overlay_quiver(ax, dump, varx1, varx2, cadence=64, norm=1):
     s1 = dump['n1'] // cadence
     s2 = dump['n2'] // cadence
 
-    ax.quiver(x[::s1, ::s2], z[::s1, ::s2], varx1[::s1, ::s2], varx2[::s1, ::s2],
-              units='width', angles='xy', scale_units='inches', scale=2)#, scale=(cadence * max_J / norm)) #'xy''xy'
+    #ax.quiver(x[::s1, ::s2], z[::s1, ::s2], varx1[::s1, ::s2], varx2[::s1, ::s2],
+    #        units='xy', angles='xy', scale_units='xy', scale=(cadence * max_J / norm))
+    #ax.streamplot(x[::s1, ::s2], z[::s1, ::s2], varx1[::s1, ::s2], varx2[::s1, ::s2], color='k')
+    ax.streamplot(np.transpose(x[::s1, ::s2]), np.transpose(z[::s1, ::s2]), np.transpose(varx1[::s1, ::s2]), np.transpose(varx2[::s1, ::s2]), color='k')
 
