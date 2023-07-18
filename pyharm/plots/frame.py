@@ -268,7 +268,7 @@ def frame(fname, diag, kwargs):
 
         # OVERLAYS
         if 'overlay_field' in kwargs and kwargs['overlay_field']:
-            if ('native' in plotrc or plotrc['native']):
+            if ('native' in plotrc and plotrc['native']):
                 overlay_streamlines_xz(ax_slc[0], dump, 'B1', 'B2', color='c')
                 overlay_streamlines_xy(ax_slc[1], dump, 'B1', 'B3', color='c')
             else:

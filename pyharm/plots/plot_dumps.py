@@ -37,7 +37,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import numpy as np
 
-from ..ana.reductions import flatten_xy, flatten_xz, wrap
+from ..ana.reductions import flatten_xy, flatten_xz, wrap, get_j_bounds
 from ..util import i_of
 from .plot_utils import *
 from .overlays import *
@@ -111,7 +111,7 @@ def l102nat(lr):
 def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
             xlabel=True, ylabel=True, native=False, log=False,
             half_cut=False, cmap='jet', shading='gouraud',
-            at=None, average=False, sum=False, cbar=True, log_r=False, **kwargs):
+            at=None, average=False, sum=False, cbar=True, log_r=False, mask=None,symlog=False, **kwargs):
     """Plot a poloidal or X1/X2 slice of a dump file.
     Note this function also accepts all keyword arguments to _decorate_plot()
 
@@ -125,7 +125,6 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
     """
 
     vname = None
-    symlog=False
     if isinstance(var, str):
         if 'symlog_' in var:
             log = True
@@ -159,7 +158,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
-                                 shading=shading, cbar=cbar) # Use this cbar, it's customized
+                                 shading=shading, cbar=cbar, mask=mask) # Use this cbar, it's customized
         cbar = False # We don't need another later on
     elif log:
         # Support legacy calling convention
@@ -263,9 +262,17 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
 
 
     x, y = dump.grid.get_xy_locations(mesh=(shading == 'flat'), native=native, log_r=log_r)
-    var = flatten_xy(dump, var, at, sum or average)
     if average:
-        var /= dump['n2']
+        # Hyerin (07/16/23) average over 60-120 deg
+        jmin, jmax = get_j_bounds(dump)
+        j_slice=(jmin, jmax)
+    else:
+        j_slice= None
+
+    var = flatten_xy(dump, var, at, sum or average, j_slice)
+    if average:
+        #var /= dump['n2']
+        var /= flatten_xy(dump, '1', at, sum or average, j_slice)
     if shading != 'flat':
         x = wrap(x)
         y = wrap(y)

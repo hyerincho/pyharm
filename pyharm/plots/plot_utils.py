@@ -43,7 +43,7 @@ __doc__ = """Generic utilities and plot types -- anything plotting-related which
 potentially useful (or indeed stolen from) outside pyharm
 """
 
-def pcolormesh_symlog(ax, X, Y, Z, vmax=None, vmin=None, linthresh=None, decades=4, linscale=0.01, cmap='RdBu_r', cbar=True, **kwargs):
+def pcolormesh_symlog(ax, X, Y, Z, vmax=None, vmin=None, linthresh=None, decades=4, linscale=0.01, cmap='RdBu_r', cbar=True, mask=None, **kwargs):
     """Wrapper for matplotlib's pcolormesh that uses it sensibly, instead of the defaults.
 
     If linthresh is not specified, it defaults to vmax*10**(-decades), i.e. showing that number of decades each
@@ -78,6 +78,9 @@ def pcolormesh_symlog(ax, X, Y, Z, vmax=None, vmin=None, linthresh=None, decades
                       + [0.0]
                       + [(10.0 ** x) for x in range(logthresh, int_max_pow)]
                       + [vmax])
+    #if mask is None: mask_xy = mask
+    #else: mask_xy = np.concatenate(([mask[0]],mask)) # for some reason X and Y have one more length?
+    if mask is not None: Z[~mask]=np.nan
     pcm = ax.pcolormesh(X, Y, Z, norm=colors.SymLogNorm(linthresh=linthresh, linscale=linscale, base=10, vmin=-vmax, vmax=vmax),
                          cmap=cmap, **kwargs)
     if cbar:

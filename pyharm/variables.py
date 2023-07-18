@@ -72,11 +72,14 @@ fns_dict = {# 4-vectors
             'h': lambda dump: enthalpy(dump),
             's': lambda dump: entropy(dump),
             'FM': lambda dump: dump['RHO'] * dump['ucon'][1],
+            'FM_A': lambda dump: dump['RHO'] * dump['ucon'][1]* dump['gdet'],
             'FE': lambda dump: -T_mixed(dump, 1, 0),
             'FE_EM': lambda dump: -TEM_mixed(dump, 1, 0),
             'FE_Fl': lambda dump: -TFl_mixed(dump, 1, 0),
             'FE_PAKE': lambda dump: -TPAKE_mixed(dump, 1, 0),
+            'FE_PAKE_A': lambda dump: -TPAKE_mixed(dump, 1, 0)*dump['gdet'],
             'FE_EN': lambda dump: -TEN_mixed(dump, 1, 0),
+            'FE_KE': lambda dump: -TFl_mixed(dump,1,0) + TEN_mixed(dump, 1, 0),
             'FE_norho': lambda dump: -T_mixed(dump, 1, 0) - dump['rho']*dump['ucon'][1],
             'FL': lambda dump: T_mixed(dump, 1, 3),
             'FL_EM': lambda dump: TEM_mixed(dump, 1, 3),
@@ -143,12 +146,16 @@ def ucon_calc(dump, loc=Loci.CENT):
 
 def bcon_calc(dump):
     """Calculate magnetic field four-vector"""
+    try:
+        B = dump["B"]
+    except:
+        B = np.zeros(np.shape(dump["ucov"][1:]))
     bcon = np.zeros_like(dump['ucon'])
-    bcon[0] = dump['B'][0] * dump['ucov'][1] + \
-              dump['B'][1] * dump['ucov'][2] + \
-              dump['B'][2] * dump['ucov'][3]
+    bcon[0] = B[0] * dump['ucov'][1] + \
+              B[1] * dump['ucov'][2] + \
+              B[2] * dump['ucov'][3]
     for mu in range(1, 4):
-        bcon[mu] = (dump['B'][mu-1] + bcon[0] * dump['ucon'][mu]) \
+        bcon[mu] = (B[mu-1] + bcon[0] * dump['ucon'][mu]) \
                         / dump['ucon'][0]
 
     return bcon
