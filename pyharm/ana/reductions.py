@@ -90,7 +90,7 @@ def flatten_xz(dump, var, at=None, sum=False, half_cut=False):
             else:
                 return np.append(var[:, :, at], np.flip(var[:, :, at + dump['n3']//2], 1), 1)
 
-def flatten_xy(dump, var, at=None, sum=False):
+def flatten_xy(dump, var, at=None, sum=False, j_slice=None):
     """Return an X-Y slice or sum of var.  Note sums are *not* GR-aware!
 
     :param at: which rank in X2 to take data from, default N2//2
@@ -99,6 +99,8 @@ def flatten_xy(dump, var, at=None, sum=False):
     if sum:
         if isinstance(var, str):
             var = dump[var]
+        if j_slice is not None:
+            var = var[:,j_slice,:]
         return var.sum(1)
     else:
         if at is None:

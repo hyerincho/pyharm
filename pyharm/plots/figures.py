@@ -351,7 +351,7 @@ def floors(fig, dump, diag, plotrc):
     ax_slc = lambda i: plt.subplot(2, 5, i)
     plotrc['xlabel'] = False
     plotrc['xticks'] = []
-    plot_xz(ax_slc(1), dump, 'rho', **plotrc) # 'Theta', log=True
+    plot_xz(ax_slc(1), dump, 'log_rho', **plotrc) # 'Theta', log=True
     plotrc['vmin'] = 0
     plotrc['vmax'] = 20
     plotrc['cmap'] = 'Reds'
