@@ -411,6 +411,35 @@ def fails(fig, dump, diag, plotrc):
     fig.suptitle("t = {}, Total inversion failures: {}".format(int(dump['t']), np.sum(dump['pflag'] > 0)))
     return fig
 
+def blob_analyses(fig, dump, diag, plotrc):
+    """In-depth analyses of blobs regardless of how they're created. (could be flux eruptions or convection etc)
+    """
+    ax_slc = lambda i: plt.subplot(2, 4, i)
+    plotrc['xlabel'] = False
+    plotrc['xticks'] = []
+    plotrc['log']=True
+    plot_xz(ax_slc(1), dump, 'rho', **plotrc)
+    plotrc['vmin']=-5; plotrc['vmax']=2
+    plot_xz(ax_slc(2), dump, 'Theta', **plotrc)
+    plotrc['vmin']=-1e2; plotrc['vmax']=1e2
+    #ax_slc(3).set_title(r'$log_{10}(u^r/u_{\rm ff})$')
+    plot_xz(ax_slc(3), dump, 'u^r_over_uff', **plotrc)
+    plotrc['vmin']=-9; plotrc['vmax']=2
+    plot_xz(ax_slc(4), dump, 'sigma', **plotrc)
+    plotrc['vmin']=-4; plotrc['vmax']=4
+    if plotrc['native']: overlay_streamlines_xz(ax_slc(5), dump, 'B1', 'B2', color='c')
+    plot_xz(ax_slc(5), dump, 'beta', **plotrc)
+    plotrc['vmin']=-1; plotrc['vmax']=5
+    plot_xz(ax_slc(6), dump, 'K', **plotrc)
+    plotrc['symlog']=True
+    plotrc['vmin']=-1; plotrc['vmax']=1
+    plot_xz(ax_slc(7), dump, 'Be_b', **plotrc)
+    plot_xz(ax_slc(8), dump, 'Be_nob', **plotrc)
+    #fig.subplots_adjust(hspace=0.1, wspace=0.12, left=0.05, right=0.95, bottom=0.05, top=0.92)
+    fig.suptitle("t = {}".format(int(dump['t'])))
+    fig.tight_layout()
+    return fig
+
 def old_floors(fig, dump, diag, plotrc):
     """Plot floor hits from iharm3d output
     """

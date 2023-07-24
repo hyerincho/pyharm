@@ -154,7 +154,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
         var = wrap(var)
 
     # Use symlog only when we need it
-    if symlog or (log and np.any(var <= 0.0)):
+    if symlog or (log and np.any(var < 0.0)):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
@@ -279,7 +279,7 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         var = wrap(var)
 
     # Use symlog only when we need it
-    if symlog or (log and np.any(var <= 0.0)):
+    if symlog or (log and np.any(var < 0.0)):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
