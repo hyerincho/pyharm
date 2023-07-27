@@ -351,6 +351,8 @@ def floors(fig, dump, diag, plotrc):
     ax_slc = lambda i: plt.subplot(2, 5, i)
     plotrc['xlabel'] = False
     plotrc['xticks'] = []
+    plotrc['vmin'] = 1e-9
+    plotrc['vmax'] = 1e-1
     plot_xz(ax_slc(1), dump, 'log_rho', **plotrc) # 'Theta', log=True
     plotrc['vmin'] = 0
     plotrc['vmax'] = 20
@@ -374,7 +376,7 @@ def floors(fig, dump, diag, plotrc):
             plotrc['yticks'] = None
 
         plot_xz(ax_slc(p), dump, dump['fflag'] & ff.value, label=ff.name, **plotrc)
-    fig.subplots_adjust(hspace=0.1, wspace=0.12, left=0.05, right=0.95, bottom=0.05, top=0.92)
+    fig.subplots_adjust(hspace=0.1, wspace=0.2, left=0.05, right=0.95, bottom=0.05, top=0.92)
     fig.suptitle("t = {}, Total floor hits: {}".format(int(dump['t']), np.sum(dump['fflag'] > 0)))
     return fig
 
@@ -384,7 +386,9 @@ def fails(fig, dump, diag, plotrc):
     ax_slc = lambda i: plt.subplot(2, 4, i)
     plotrc['xlabel'] = False
     plotrc['xticks'] = []
-    plot_xz(ax_slc(1), dump, 'rho', log=True, **plotrc)
+    plotrc['log'] = True
+    plot_xz(ax_slc(1), dump, 'rho', **plotrc)
+    plotrc['log'] = False
     plotrc['vmin'] = 0
     plotrc['vmax'] = 1
     plotrc['cmap'] = 'Reds'
@@ -434,7 +438,9 @@ def blob_analyses(fig, dump, diag, plotrc):
     plotrc['symlog']=True
     plotrc['vmin']=-1; plotrc['vmax']=1
     plot_xz(ax_slc(7), dump, 'Be_b', **plotrc)
-    plot_xz(ax_slc(8), dump, 'Be_nob', **plotrc)
+    plotrc['vmin']=1e-6; plotrc['vmax']=1
+    plotrc['symlog']=False
+    plot_xz(ax_slc(8), dump, -dump["TEM^0_0"]/dump["rho"],label=r'-$T^0_{\rm 0, EM}/\rho$', **plotrc)
     #fig.subplots_adjust(hspace=0.1, wspace=0.12, left=0.05, right=0.95, bottom=0.05, top=0.92)
     fig.suptitle("t = {}".format(int(dump['t'])))
     fig.tight_layout()
