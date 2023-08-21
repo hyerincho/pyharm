@@ -61,10 +61,10 @@ fns_dict = {# 4-vectors
             'bcon_cart': lambda dump: np.einsum("i...,ij...->j...", dump["bcon_base"], dump['dXdx_cart']),
             'bcov_cart': lambda dump: np.einsum("i...,ij...->j...", dump["bcov_base"], dump['dxdX_cart']),
             # Versions in BL
-            'ucon_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dxdX_bl'], dump['ucon_base']),
-            'ucov_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dXdx_bl'], dump['ucov_base']),
-            'bcon_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dxdX_bl'], dump['bcon_base']),
-            'bcov_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dXdx_bl'], dump['bcov_base']),
+            'ucon_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dXdx_bl'], dump['ucon_base']),
+            'ucov_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dxdX_bl'], dump['ucov_base']),
+            'bcon_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dXdx_bl'], dump['bcon_base']),
+            'bcov_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dxdX_bl'], dump['bcov_base']),
             # Miscallany!
             'bsq': lambda dump: dump.grid.dot(dump['bcov'], dump['bcon']),
             'sigma': lambda dump: dump['bsq'] / dump['RHO'],
@@ -112,10 +112,12 @@ fns_dict = {# 4-vectors
             'jet_psi': lambda dump: jet_psi(dump),
             'divB_prims': lambda dump: divB(dump.grid, dump['B']),
             'divB_cons': lambda dump: divB_cons(dump.grid, dump['cons.B']),
+            'divB_cons_rel': lambda dump: divB_cons(dump.grid, dump['cons.B'])/dump['b']/dump["gdet"] * dump["dx1"],
             'lumproxy': lambda dump: lum_proxy(dump),
             'jI': lambda dump: jnu(dump),
             'K': lambda dump: (dump['gam']-1.) * dump['UU'] * pow(dump['RHO'], -dump['gam']),
             'cs': lambda dump: np.sqrt(dump['gam'] * dump['Pg'] / (dump['RHO'] + dump['gam'] * dump['UU'])),
+            'Omega': lambda dump: dump["u^phi"]/dump["u^t"] ,
             }
 
 ## Physics functions ##
