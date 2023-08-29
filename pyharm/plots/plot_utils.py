@@ -90,13 +90,14 @@ def pcolormesh_symlog(ax, X, Y, Z, vmax=None, vmin=None, linthresh=None, decades
 
     return pcm
 
-def pcolormesh_log(ax, X, Y, Z, vmax=None, vmin=None, cmap='jet', cbar=True, **kwargs):
+def pcolormesh_log(ax, X, Y, Z, vmax=None, vmin=None, cmap='jet', cbar=True, mask=None, **kwargs):
     """Wrapper for matplotlib's pcolormesh that uses it sensibly, instead of the defaults.
 
     If not specified, vmax is set automatically
     In order to keep colors sensible, vmin is overridden unless set alone.
     """
 
+    if mask is not None: Z[~mask]=np.nan
     pcm = ax.pcolormesh(X, Y, Z, norm=colors.LogNorm(vmin=vmin, vmax=vmax),
                          cmap=cmap, **kwargs)
     if cbar:
