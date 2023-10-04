@@ -38,7 +38,7 @@ from pyharm.defs import Loci, Slices, Shapes
 from pyharm.coordinates import *
 
 
-def make_some_grid(system, n1=128, n2=128, n3=128, a=0, hslope=0.3,
+def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3, poly_xt = 0.82, poly_alpha = 14.0, mks_smooth = 0.5, th_pole=0.3,
                     r_in=None, r_out=1000, caches=True, cache_conn=False):
     """Convenience function for generating grids with particular known parameters.
 
@@ -69,15 +69,18 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, hslope=0.3,
         params['x3max'] = 1
     elif 'ks' in system:
         params['a'] = a
+        params['ext_g'] = ext_g
         params['r_out'] = r_out
         if r_in is not None:
             params['r_in'] = r_in
         if 'mks' in system:
             params['hslope'] = hslope
         if system == 'fmks' or system == 'mmks':
-            params['poly_xt'] = 0.82
-            params['poly_alpha'] = 14.0
-            params['mks_smooth'] = 0.5
+            params['poly_xt'] = poly_xt
+            params['poly_alpha'] = poly_alpha
+            params['mks_smooth'] = mks_smooth
+        if system == 'wks':
+            params['th_pole'] = th_pole
 
     return Grid(params, caches=caches, cache_conn=cache_conn)
 
@@ -174,6 +177,8 @@ class Grid:
             self.coords = KS(params)
         elif params['coordinates'] == "bl":
             self.coords = BL(params)
+        elif params['coordinates'] == "wks":
+            self.coords = WKS(params)
         else:
             raise ValueError("metric is {}!! must be minkowski, mks, mmks, or fmks".format(params['coordinates']))
 

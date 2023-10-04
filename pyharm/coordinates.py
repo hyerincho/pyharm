@@ -352,6 +352,19 @@ class KS(CoordinateSystem):
         if self.ext_g:
             self.A = 1.46797639e-8
             self.B = 1.29411117
+        
+        # For avoiding coordinate singularity
+        # We can usually leave this default
+        if 'small_theta' in met_params:
+            self.small_th = met_params['small_theta']
+        else:
+            self.small_th = 1.e-20
+
+        # Set radii
+        self.r_eh = 1. + np.sqrt(1. - self.a ** 2)
+        z1 = 1. + (1. - self.a**2)**(1/3) * ((1. + self.a)**(1/3) + (1. - self.a)**(1. / 3.))
+        z2 = np.sqrt(3. * self.a**2 + z1**2)
+        self.r_isco = 3. + z2 - (np.sqrt((3. - z1) * (3. + z1 + 2. * z2))) * np.sign(self.a)
 
     def r(self, x):
         return x[1]
@@ -534,6 +547,72 @@ class SEKS(KS):
         dxdX[0, 0] = 1
         dxdX[1, 1] = np.exp(x[1] + (super_dist > 0) * self.cpow * np.power(super_dist, self.npow))* (1. + (super_dist > 0) *self.cpow * self.npow * np.power(super_dist, self.npow-1.))
         dxdX[2, 2] = 1
+        dxdX[3, 3] = 1
+        return dxdX
+
+class WKS(KS):
+    # Wide-pole KS
+    def __init__(self, met_params=default_met_params):
+        self.th_pole = met_params['th_pole']
+        self.dx2 = (self.native_stopx(met_params) - self.native_startx(met_params))[2] / met_params['n2']
+        super(WKS, self).__init__(met_params)
+
+    def native_startx(self, met_params):
+        # TODO take direct 'startx' from met params?
+        if 'startx1' in met_params and 'startx2' in met_params and 'startx3' in met_params:
+            startx = np.array([0, met_params['startx1'], met_params['startx2'], met_params['startx3']])
+        elif 'r_in' in met_params:
+            # Set startx1 from r_in
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1tot' in met_params and 'r_out' in met_params:
+            # Else via a guess, which we propagate back to the originating parameter file
+            met_params['r_in'] = np.exp((met_params['n1tot'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                        (-1. + met_params['n1tot'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1' in met_params and 'r_out' in met_params:
+            # Or a more questionable guess
+            met_params['r_in'] = np.exp((met_params['n1'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                        (-1. + met_params['n1'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        else:
+            print("The only parameters provided to native_startx were: ", met_params)
+            raise ValueError("Cannot find or guess startx!")
+        return startx
+
+    def native_stopx(self, met_params):
+        if 'r_out' in met_params:
+            return np.array([0, np.log(met_params['r_out']), 1, 2*np.pi])
+        elif ('startx1' in met_params and 'dx1' in met_params and 'n1' in met_params and
+              'startx2' in met_params and 'dx2' in met_params and 'n2' in met_params and
+              'startx3' in met_params and 'dx3' in met_params and 'n3' in met_params):
+            return np.array([0, met_params['startx1'] + met_params['n1']*met_params['dx1'],
+                            met_params['startx2'] + met_params['n2']*met_params['dx2'],
+                            met_params['startx3'] + met_params['n3']*met_params['dx3']])
+        else:
+            raise ValueError("Cannot find or guess stopx!")
+
+
+    def r(self, x):
+        return np.exp(x[1])
+
+    def th(self, x):
+        north = np.where(x[2]<self.dx2) # north pole
+        south = np.where(1. - x[2] < self.dx2) # south pole
+        th_out = self.th_pole + (np.pi - 2. * self.th_pole) * (x[2] - self.dx2) / (1. - 2. * self.dx2)
+        th_out[north] = self.th_pole * x[2][north] / self.dx2
+        th_out[south] = np.pi + self.th_pole * (x[2][south] - 1.) / self.dx2
+
+        return self.correct_small_th(th_out)
+
+    def dxdX(self, x):
+        north = np.where(x[2]<self.dx2) # north pole
+        south = np.where(1. - x[2] < self.dx2) # south pole
+        dxdX = np.zeros([4, 4, *x.shape[1:]])
+        dxdX[0, 0] = 1
+        dxdX[1, 1] = np.exp(x[1])
+        dxdX[2, 2] = (np.pi - 2. * self.th_pole) / (1. - 2. * self.dx2)
+        dxdX[2, 2][north] = self.th_pole / self.dx2
+        dxdX[2, 2][south] = self.th_pole / self.dx2
         dxdX[3, 3] = 1
         return dxdX
 
