@@ -36,6 +36,7 @@ import sys
 
 from .reductions import *
 from .. import io
+import pdb
 
 __doc__ = \
 """Groups of particular related reductions performed over a GRMHD run.
@@ -248,12 +249,12 @@ def jet_profile(dump, out, **kwargs):
     """
     rBZ = _get(kwargs, 'rBZ')
     iBZ = i_of(dump['r1d'], rBZ)
-    s_dump = dump[iBZ]
+    #s_dump = dump[iBZ]
     for var in ['rho', 'bsq', 'b^r', 'b^th', 'b^3', 'u^r', 'u^th', 'u^3', 'FM', 'FE', 'FE_EM', 'FE_Fl', 'FL', 'FL_EM', 'FL_Fl', 'betagamma', 'Be_nob', 'Be_b']:
-        out['tht/' + var + '_' + str(int(rBZ))] = np.sum(s_dump[var], axis=-1)
+        out['tht/' + var + '_' + str(int(rBZ))] = np.sum(dump[var][iBZ], axis=-1)
         if _get(kwargs, 'do_tavgs'):
             out['th/' + var + '_' + str(int(rBZ))] = out['tht/' + var + '_']
-            out['thphi/' + var + '_' + str(int(rBZ))] = s_dump[var]
+            out['thphi/' + var + '_' + str(int(rBZ))] = dump[var][iBZ]
 
 def jet_cuts(dump, out, **kwargs):
     """Blandford-Znajek Luminosity L_BZ, calculated with a sampling of different cuts floated for EHTC V '19

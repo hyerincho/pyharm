@@ -160,11 +160,15 @@ def overlay_flowlines(ax, dump, varx1, varx2, nlines=20, color='k', native=False
 
     ax.contour(x, z, AJ_phi, levels=levels, colors=color)
 
-def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native=True):
+def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native=True, embed_label=True, half_cut=False):
     """ Added by Hyerin (06/13/23) streamlines of flows"""
-    varx1 = flatten_xz(dump, varx1, sum=False, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
-    varx2 = flatten_xz(dump, varx2, sum=False, half_cut=True) / dump['n3'] * dump['gdet'][:,:,0]
-    x, z = dump.grid.get_xz_locations(native=native)
+    varx1 = flatten_xz(dump, varx1, sum=False, half_cut=half_cut) / dump['n3'] * np.squeeze(dump['gdet']) # modified by Hyerin (05/03/23), do I need to multiply gdet?
+    varx2 = flatten_xz(dump, varx2, sum=False, half_cut=half_cut) / dump['n3'] * np.squeeze(dump['gdet'])
+    x, z = dump.grid.get_xz_locations(native=True, half_cut=half_cut)
+    if native and embed_label:
+        # change X1 to log_10(r), X2 to theta
+        x = np.log10(np.exp(x))
+        z = np.pi*z
 
     s1 = np.maximum(dump['n1'] // cadence,1)
     s2 = np.maximum(dump['n2'] // cadence,1)

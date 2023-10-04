@@ -392,7 +392,7 @@ class Grid:
         return np.min(dt_light_local)
 
     ### PLOTTING/CONVENIENCE
-    def get_xz_locations(self, mesh=False, native=False, half_cut=False, log_r=False):
+    def get_xz_locations(self, mesh=False, native=False, half_cut=False, log_r=False, embed_label=True):
         """Get the mesh locations x_ij and z_ij needed for plotting a poloidal slice.
         By default, gets locations at zone centers in slices phi=0,180.
         Note there is no need for an 'at' parameter, at least for plotting: 2D plots should be face-on.
@@ -423,8 +423,13 @@ class Grid:
             else:
                 m = np.append(m[Ellipsis, 0], np.flip(m[Ellipsis, 1], 2), 2)
         if native:
-            x = m[1]
-            z = m[2]
+            if embed_label:
+                # change X1 to log_10(r), X2 to theta
+                x = np.log10(self.coords.r(m))
+                z = self.coords.th(m)
+            else:
+                x = m[1]
+                z = m[2]
         else:
             x = self.coords.cart_x(m, log_r)
             z = self.coords.cart_z(m, log_r)

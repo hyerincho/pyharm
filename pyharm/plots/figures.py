@@ -419,7 +419,7 @@ def blob_analyses(fig, dump, diag, plotrc):
     """In-depth analyses of blobs regardless of how they're created. (could be flux eruptions or convection etc)
     """
     ax_slc = lambda i: plt.subplot(2, 3, i)
-    plotrc['xlabel'] = False
+    plotrc['xlabel'] = True #False
     plotrc['xticks'] = []
     plotrc['log']=True
     plotrc['vmin']=-9; plotrc['vmax']=-1

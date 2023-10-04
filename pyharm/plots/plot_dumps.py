@@ -108,8 +108,8 @@ def l102nat(lr):
     return np.log(np.power(10.,lr))
 
 
-def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
-            xlabel=True, ylabel=True, native=False, log=False,
+def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
+            xlabel=True, ylabel=True, native=False, embed_label=True, log=False,
             half_cut=False, cmap='jet', shading='gouraud',
             at=None, average=False, sum=False, cbar=True, log_r=False, mask=None,symlog=False, **kwargs):
     """Plot a poloidal or X1/X2 slice of a dump file.
@@ -144,7 +144,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
         elif "Beb_over_uff2" in var:
             var = dump["Be_b"]/uff**2
 
-    x, z = dump.grid.get_xz_locations(mesh=(shading == 'flat'), native=native, half_cut=(half_cut or native), log_r=log_r)
+    x, z = dump.grid.get_xz_locations(mesh=(shading == 'flat'), native=native, half_cut=(half_cut or native), log_r=log_r, embed_label=embed_label)
     var = flatten_xz(dump, var, at, sum or average, half_cut or native)
     if average:
         var /= dump['n3']
@@ -152,6 +152,11 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
         x = wrap(x)
         z = wrap(z)
         var = wrap(var)
+
+    #if native and embed_label:
+    # change X1 to log_10(r), X2 to theta
+    #    x = np.log10(np.exp(x))
+    #    z = dump["th"] #np.pi*z
 
     # Use symlog only when we need it
     if symlog or (log and np.any(var < 0.0)):
@@ -173,11 +178,15 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=(-40, 40, -40, 40),
                              shading=shading)
 
     if native:
-        secax = ax.secondary_xaxis('top', functions=(nat2l10, l102nat))
-        if xlabel: 
-            ax.set_xlabel("X1 (native coordinates)")
-            secax.set_xlabel("log r")
-        if ylabel: ax.set_ylabel("X2 (native coordinates)")
+        if embed_label:
+            if xlabel: ax.set_xlabel(r"$\log_{\rm 10}(r)$")
+            if ylabel: ax.set_ylabel(r"$\theta$")
+        else:
+            secax = ax.secondary_xaxis('top', functions=(nat2l10, l102nat))
+            if xlabel: 
+                ax.set_xlabel("X1 (native coordinates)")
+                secax.set_xlabel("log r")
+            if ylabel: ax.set_ylabel("X2 (native coordinates)")
         if window:
             ax.set_xlim(window[:2])
             ax.set_ylim(window[2:])
