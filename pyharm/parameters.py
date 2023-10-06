@@ -114,6 +114,8 @@ def parse_parthenon_dat(string):
         params['coordinates'] = "eks"
     elif "superexp" in params['transform']:
         params['coordinates'] = "seks"
+    elif "wks" in params['transform']:
+        params['coordinates'] = "wks"
     elif "null" in params['transform'] and "ks" in params['base']:
         params['coordinates'] = "ks"
     elif "null" in params['transform'] and "bl" in params['base']:
