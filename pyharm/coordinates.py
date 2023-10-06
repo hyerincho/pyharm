@@ -553,8 +553,14 @@ class SEKS(KS):
 class WKS(KS):
     # Wide-pole KS
     def __init__(self, met_params=default_met_params):
-        self.th_pole = met_params['th_pole']
-        self.dx2 = (self.native_stopx(met_params) - self.native_startx(met_params))[2] / met_params['n2']
+        self.lin_frac = met_params['lin_frac']
+        self.n2 = met_params['n2']
+        if self.lin_frac >= np.power(1./np.pi-1./self.n2+1.,-1.):
+            print("WARNING: it is hard to get del phi ~ del theta. consider using a smaller lin_frac < {:.3g}".format(np.power(1./np.pi-1./self.n2+1.,-1.)))
+            self.smoothness = 0.8/self.n2
+        else:
+            # can define smoothness to get a del phi (pole) ~ del theta (midplane). higher the number, the smoother the transition is
+            self.smoothness = np.power(-2. * self.n2 * np.log(1. - self.lin_frac / (1. - self.lin_frac) * (1. / np.pi - 1. / self.n2)),-1.)
         super(WKS, self).__init__(met_params)
 
     def native_startx(self, met_params):
@@ -596,23 +602,14 @@ class WKS(KS):
         return np.exp(x[1])
 
     def th(self, x):
-        north = np.where(x[2]<self.dx2) # north pole
-        south = np.where(1. - x[2] < self.dx2) # south pole
-        th_out = self.th_pole + (np.pi - 2. * self.th_pole) * (x[2] - self.dx2) / (1. - 2. * self.dx2)
-        th_out[north] = self.th_pole * x[2][north] / self.dx2
-        th_out[south] = np.pi + self.th_pole * (x[2][south] - 1.) / self.dx2
-
+        th_out = np.pi / 2. * (1. + 2 * self.lin_frac * (x[2] - 0.5) + (1. - self.lin_frac) * np.exp((x[2] - 1.) / self.smoothness) - (1. -self.lin_frac) * np.exp(-x[2] / self.smoothness))
         return self.correct_small_th(th_out)
 
     def dxdX(self, x):
-        north = np.where(x[2]<self.dx2) # north pole
-        south = np.where(1. - x[2] < self.dx2) # south pole
         dxdX = np.zeros([4, 4, *x.shape[1:]])
         dxdX[0, 0] = 1
         dxdX[1, 1] = np.exp(x[1])
-        dxdX[2, 2] = (np.pi - 2. * self.th_pole) / (1. - 2. * self.dx2)
-        dxdX[2, 2][north] = self.th_pole / self.dx2
-        dxdX[2, 2][south] = self.th_pole / self.dx2
+        dxdX[2, 2] = np.pi / 2. * (2. * self.lin_frac + (1. - self.lin_frac) / self.smoothness * np.exp((x[2] - 1.) / self.smoothness) + (1. - self.lin_frac) / self.smoothness * np.exp(-x[2] / self.smoothness))
         dxdX[3, 3] = 1
         return dxdX
 

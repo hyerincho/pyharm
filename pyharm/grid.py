@@ -38,7 +38,7 @@ from pyharm.defs import Loci, Slices, Shapes
 from pyharm.coordinates import *
 
 
-def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3, poly_xt = 0.82, poly_alpha = 14.0, mks_smooth = 0.5, th_pole=0.3,
+def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3, poly_xt = 0.82, poly_alpha = 14.0, mks_smooth = 0.5, lin_frac=0.6,
                     r_in=None, r_out=1000, caches=True, cache_conn=False):
     """Convenience function for generating grids with particular known parameters.
 
@@ -80,7 +80,7 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
             params['poly_alpha'] = poly_alpha
             params['mks_smooth'] = mks_smooth
         if system == 'wks':
-            params['th_pole'] = th_pole
+            params['lin_frac'] = lin_frac
 
     return Grid(params, caches=caches, cache_conn=cache_conn)
 
