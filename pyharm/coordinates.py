@@ -555,12 +555,15 @@ class WKS(KS):
     def __init__(self, met_params=default_met_params):
         self.lin_frac = met_params['lin_frac']
         self.n2 = met_params['n2']
-        if self.lin_frac >= np.power(1./np.pi-1./self.n2+1.,-1.):
-            print("WARNING: it is hard to get del phi ~ del theta. consider using a smaller lin_frac < {:.3g}".format(np.power(1./np.pi-1./self.n2+1.,-1.)))
+        self.n3 = met_params['n3']
+        t = self.lin_frac / (1. - self.lin_frac) * (1. / np.pi - 1. / self.n3) * self.n3 / self.n2
+        if abs(t) >= 1.: #self.lin_frac >= np.power(1./np.pi-1./self.n2+1.,-1.):
+            print("WARNING: it is hard to get del phi ~ del theta. consider using a smaller lin_frac < {:.3g}".format(np.power((1./np.pi-1./self.n2)*self.n3/self.n2+1.,-1.)))
             self.smoothness = 0.8/self.n2
         else:
             # can define smoothness to get a del phi (pole) ~ del theta (midplane). higher the number, the smoother the transition is
-            self.smoothness = np.power(-2. * self.n2 * np.log(1. - self.lin_frac / (1. - self.lin_frac) * (1. / np.pi - 1. / self.n2)),-1.)
+            self.smoothness = np.power(self.n2 * np.log((1. + t) / (1. - t)),-1.)
+        print(self.smoothness)
         super(WKS, self).__init__(met_params)
 
     def native_startx(self, met_params):
@@ -602,14 +605,16 @@ class WKS(KS):
         return np.exp(x[1])
 
     def th(self, x):
-        th_out = np.pi / 2. * (1. + 2 * self.lin_frac * (x[2] - 0.5) + (1. - self.lin_frac) * np.exp((x[2] - 1.) / self.smoothness) - (1. -self.lin_frac) * np.exp(-x[2] / self.smoothness))
+        #th_out = np.pi / 2. * (1. + 2 * self.lin_frac * (x[2] - 0.5) + (1. - self.lin_frac) * np.exp((x[2] - 1.) / self.smoothness) - (1. -self.lin_frac) * np.exp(-x[2] / self.smoothness))
+        th_out = np.pi / 2. * (1. + 2 * self.lin_frac * (x[2] - 0.5) + (1. - self.lin_frac) * (np.tanh((x[2] - 1.) / self.smoothness) + 1.) - (1. - self.lin_frac) * (np.tanh(-x[2] / self.smoothness) + 1.))
         return self.correct_small_th(th_out)
 
     def dxdX(self, x):
         dxdX = np.zeros([4, 4, *x.shape[1:]])
         dxdX[0, 0] = 1
         dxdX[1, 1] = np.exp(x[1])
-        dxdX[2, 2] = np.pi / 2. * (2. * self.lin_frac + (1. - self.lin_frac) / self.smoothness * np.exp((x[2] - 1.) / self.smoothness) + (1. - self.lin_frac) / self.smoothness * np.exp(-x[2] / self.smoothness))
+        #dxdX[2, 2] = np.pi / 2. * (2. * self.lin_frac + (1. - self.lin_frac) / self.smoothness * np.exp((x[2] - 1.) / self.smoothness) + (1. - self.lin_frac) / self.smoothness * np.exp(-x[2] / self.smoothness))
+        dxdX[2, 2] = np.pi / 2. * (2. * self.lin_frac + (1. - self.lin_frac) / (self.smoothness * np.power(np.cosh((x[2] - 1.) / self.smoothness),2.)) + (1. - self.lin_frac) / (self.smoothness * np.power(np.cosh(-x[2] / self.smoothness),2.)))
         dxdX[3, 3] = 1
         return dxdX
 
