@@ -554,19 +554,22 @@ class WKS(KS):
     # Wide-pole KS
     def __init__(self, met_params=default_met_params):
         self.lin_frac = met_params['lin_frac']
+        try: self.smoothness = met_params['smoothness']
+        except: self.smoothness = -1.
         self.n2 = met_params['n2']
         self.n3 = met_params['n3']
         if self.n3 < np.pi: self.n3 = self.n2
-        if self.lin_frac == 1: t = 1
-        else: t = self.lin_frac / (1. - self.lin_frac) * (1. / np.pi - 1. / self.n3) * self.n3 / self.n2
-        if abs(t) >= 1.: #self.lin_frac >= np.power(1./np.pi-1./self.n2+1.,-1.):
-            print("WARNING: it is hard to get del phi ~ del theta. consider using a smaller lin_frac < {:.3g}".format(np.power((1./np.pi-1./self.n2)*self.n3/self.n2+1.,-1.)))
-            self.smoothness = 0.8/self.n2
-        else:
-            # can define smoothness to get a del phi (pole) ~ del theta (midplane). higher the number, the smoother the transition is
-            self.smoothness = np.power(self.n2 * np.log((1. + t) / (1. - t)),-1.)
-        self.smoothness = max(0.01, self.smoothness)
-        print(self.smoothness)
+        if self.smoothness <= 0:
+            if self.lin_frac == 1: t = 1
+            else: t = self.lin_frac / (1. - self.lin_frac) * (1. / np.pi - 1. / self.n3) * self.n3 / self.n2
+            if abs(t) >= 1.: #self.lin_frac >= np.power(1./np.pi-1./self.n2+1.,-1.):
+                print("WARNING: it is hard to get del phi ~ del theta. consider using a smaller lin_frac < {:.3g}".format(np.power((1./np.pi-1./self.n2)*self.n3/self.n2+1.,-1.)))
+                self.smoothness = 0.8/self.n2
+            else:
+                # can define smoothness to get a del phi (pole) ~ del theta (midplane). higher the number, the smoother the transition is
+                self.smoothness = np.power(self.n2 * np.log((1. + t) / (1. - t)),-1.)
+            self.smoothness = 0.02 #max(0.01, self.smoothness)
+            print(self.smoothness)
         super(WKS, self).__init__(met_params)
 
     def native_startx(self, met_params):
