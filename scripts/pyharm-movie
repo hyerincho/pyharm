@@ -99,6 +99,7 @@ class ExtensibleCmd(click.Command):
 @click.option('--nlines', default=20, help="Number of overlay field lines.")
 @click.option('--overlay_grid', is_flag=True, help="Overlay simulation zone borders.")
 @click.option('--native', is_flag=True, help="Plot in native coordinates X1,X2,X3 rather than converting to Cartesian.")
+@click.option('--embed_label', is_flag=True, help="Change native coordinates label to embedded coordinates label.")
 @click.option('--bh', default=True, help="Whether to show the BH shadow.")
 @click.option('--no_grid_cache', is_flag=True, help="Don't cache geometry.  For plotting large Cartesian simulations.")
 @click.option('--prefer_iharm3d', is_flag=True, help="Prefer iharm3d-format files if available alongside KHARMA output")

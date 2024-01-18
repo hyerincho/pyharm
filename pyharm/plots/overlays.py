@@ -160,16 +160,16 @@ def overlay_flowlines(ax, dump, varx1, varx2, nlines=20, color='k', native=False
 
     ax.contour(x, z, AJ_phi, levels=levels, colors=color)
 
-def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native=True, embed_label=True, half_cut=False):
+def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native=True, half_cut=False, embed_label=False):
     """ Added by Hyerin (06/13/23) streamlines of flows"""
+    if embed_label: 
+        print("embed_label not supported to overlay streamline.")
+        return
+    if native: half_cut = True
     varx1 = flatten_xz(dump, varx1, sum=False, half_cut=half_cut) / dump['n3'] * np.squeeze(dump['gdet']) # modified by Hyerin (05/03/23), do I need to multiply gdet?
     varx2 = flatten_xz(dump, varx2, sum=False, half_cut=half_cut) / dump['n3'] * np.squeeze(dump['gdet'])
-    x, z = dump.grid.get_xz_locations(native=True, half_cut=half_cut)
-    if native and embed_label:
-        # change X1 to log_10(r), X2 to theta
-        x = np.log10(np.exp(x))
-        z = np.pi*z
-
+    x, z = dump.grid.get_xz_locations(native=True, half_cut=half_cut, embed_label=False)
+    
     s1 = np.maximum(dump['n1'] // cadence,1)
     s2 = np.maximum(dump['n2'] // cadence,1)
     ax.streamplot(np.transpose(x[::s1, ::s2]), np.transpose(z[::s1, ::s2]), np.transpose(varx1[::s1, ::s2]), np.transpose(varx2[::s1, ::s2]), color=color)

@@ -127,7 +127,7 @@ def frame(fname, diag, kwargs):
         for key in ('vmin', 'vmax', 'xmin', 'xmax', 'ymin', 'ymax', # float
                     'left', 'right', 'top', 'bottom', 'wspace', 'hspace', # float
                     'at', 'nlines', 'fill', # int
-                    'native', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r', # bool
+                    'native', 'embed_label', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r', # bool
                     'shading', 'cmap'): # string
             if key in kwargs:
                 plotrc[key] = kwargs[key]
@@ -141,7 +141,7 @@ def frame(fname, diag, kwargs):
                 if key in ('at', 'nlines'):
                     # Should be ints
                     plotrc[key] = int(plotrc[key])
-                if key in ('native', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r'):
+                if key in ('native', 'embed_label', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r'):
                     # Should be bools
                     plotrc[key] = bool(plotrc[key])
         
@@ -230,9 +230,18 @@ def frame(fname, diag, kwargs):
             if "_poloidal" in movie_type or "_2d" in movie_type:
                 ax = plt.subplot(1, 1, 1)
                 var = movie_type.replace("_poloidal","")
+
+                # HYERIN
+                no_margin = True
+                plotrc.update({'xlabel': False, 'ylabel': False,
+                    'xticks': [], 'yticks': [], 'half_cut': True, 'no_title': True,
+                            'cbar': False, 'frame': False})
+                plotrc['window'] = (0, sz, -sz, sz)
+
                 if "divB" in var:
                     var = dump[var]
-                plot_xz(ax, dump, var, **plotrc)
+                #plot_xz(ax, dump, var, **plotrc)
+                plot_slices(ax, None, dump, var, **plotrc)
             elif "_toroidal" in movie_type:
                 ax = plt.subplot(1, 1, 1)
                 var = movie_type.replace("_toroidal","")
@@ -269,7 +278,7 @@ def frame(fname, diag, kwargs):
         # OVERLAYS
         if 'overlay_field' in kwargs and kwargs['overlay_field']:
             if ('native' in plotrc and plotrc['native']):
-                overlay_streamlines_xz(ax_slc[0], dump, 'B1', 'B2', color='c')
+                overlay_streamlines_xz(ax_slc[0], dump, 'B1', 'B2', color='c', embed_label=plotrc['embed_label'])
                 overlay_streamlines_xy(ax_slc[1], dump, 'B1', 'B3', color='c')
             else:
                 if 'nlines' not in plotrc:
@@ -279,7 +288,7 @@ def frame(fname, diag, kwargs):
         #if 'overlay_quiver' in kwargs and kwargs['overlay_quiver'] and ('native' in plotrc and plotrc['native']): # added by Hyerin (05/03/23)
         #    overlay_quiver(ax, dump, **plotrc)
         if 'overlay_streamline' in kwargs and kwargs['overlay_streamline']: # added by Hyerin (06/13/23)
-            overlay_streamlines_xz(ax_slc[0], dump, 'u^1', 'u^2')
+            overlay_streamlines_xz(ax_slc[0], dump, 'u^1', 'u^2', embed_label=plotrc['embed_label'])
             overlay_streamlines_xy(ax_slc[1], dump, 'u^1', 'u^3')
         #if 'overlay_flow' in kwargs and kwargs['overlay_flow'] and not ('native' in plotrc and plotrc['native']):
         #    nlines = plotrc['nlines'] if 'nlines' in plotrc else 20

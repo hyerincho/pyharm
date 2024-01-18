@@ -420,7 +420,7 @@ def blob_analyses(fig, dump, diag, plotrc):
     """
     ax_slc = lambda i: plt.subplot(2, 3, i)
     plotrc['xlabel'] = True #False
-    plotrc['xticks'] = []
+    #plotrc['xticks'] = []
     plotrc['log']=True
     plotrc['vmin']=-9; plotrc['vmax']=-1
     plot_xz(ax_slc(1), dump, 'rho', **plotrc)
@@ -430,7 +430,7 @@ def blob_analyses(fig, dump, diag, plotrc):
     #ax_slc(3).set_title(r'$log_{10}(u^r/u_{\rm ff})$')
     plot_xz(ax_slc(3), dump, 'u^r_over_uff', **plotrc)
     #plotrc['vmin']=-9; plotrc['vmax']=2
-    if plotrc['native']: overlay_streamlines_xz(ax_slc(4), dump, 'B1', 'B2', color='c')
+    #if plotrc['native']: overlay_streamlines_xz(ax_slc(4), dump, 'B1', 'B2', color='c')
     #plot_xz(ax_slc(4), dump, 'sigma', **plotrc)
     plotrc['vmin']=-3; plotrc['vmax']=2
     plot_xz(ax_slc(4), dump, 'beta', **plotrc)

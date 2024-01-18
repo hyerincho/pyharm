@@ -569,7 +569,7 @@ class WKS(KS):
                 # can define smoothness to get a del phi (pole) ~ del theta (midplane). higher the number, the smoother the transition is
                 self.smoothness = np.power(self.n2 * np.log((1. + t) / (1. - t)),-1.)
             self.smoothness = 0.02 #max(0.01, self.smoothness)
-            print(self.smoothness)
+            #print(self.smoothness)
         super(WKS, self).__init__(met_params)
 
     def native_startx(self, met_params):

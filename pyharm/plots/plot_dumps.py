@@ -137,12 +137,15 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
         uff = 1./np.sqrt(dump["r"]) # free fall velocity
         cs0 = 1./dump["rs"] # sound speed at infinity
         uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
+        uK = np.power(dump["r"],-3./2) # Keplerian velocity
         if "u^r_over_uff" in var:
             var = dump["u^r"]/uff
         elif "u^r_over_uchar" in var:
             var = dump["u^r"]/uchar
         elif "Beb_over_uff2" in var:
             var = dump["Be_b"]/uff**2
+        elif "u^phi_over_uK" in var:
+            var = dump["u^phi"]/uK
 
     x, z = dump.grid.get_xz_locations(mesh=(shading == 'flat'), native=native, half_cut=(half_cut or native), log_r=log_r, embed_label=embed_label)
     var = flatten_xz(dump, var, at, sum or average, half_cut or native)
@@ -152,11 +155,6 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
         x = wrap(x)
         z = wrap(z)
         var = wrap(var)
-
-    #if native and embed_label:
-    # change X1 to log_10(r), X2 to theta
-    #    x = np.log10(np.exp(x))
-    #    z = dump["th"] #np.pi*z
 
     # Use symlog only when we need it
     if symlog or (log and np.any(var < 0.0)):
@@ -262,12 +260,15 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         uff = 1./np.sqrt(dump["r"]) # free fall velocity
         cs0 = 1./dump["rs"] # sound speed at infinity
         uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
+        uK = np.power(dump["r"],-3./2) # Keplerian velocity
         if "u^r_over_uff" in var:
             var = dump["u^r"]/uff
         elif "u^r_over_uchar" in var:
             var = dump["u^r"]/uchar
         elif "Beb_over_uff2" in var:
             var = dump["Be_b"]/uff**2
+        elif "u^phi_over_uK" in var:
+            var = dump["u^phi"]/uK
 
 
     x, y = dump.grid.get_xy_locations(mesh=(shading == 'flat'), native=native, log_r=log_r)
@@ -428,7 +429,7 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
     """Make adjacent plots with plot_xy and plot_xz, using the given pair of axes.
     Assumes axes are arranged left-to-right ax1, ax2
     """
-    kwargs_left = {**kwargs, **{'cbar': True}} #False}}
+    kwargs_left = {**kwargs} #, **{'cbar': True}} #False}}
     # If we specified 'at', it was *certainly* for the xz slice, not this one.
     # TODO separate option when calling this/plot_xy that will disambiguate?
     kwargs_right = {**kwargs, **{'at': None}}
@@ -442,14 +443,14 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
           kwargs_left_fill = {**kwargs, **{'cbar': False}}
           kwargs_right_fill = {**kwargs_right, **{'cbar': False}}
           plot_xz(ax1, df, var, **kwargs_left_fill)
-          plot_xy(ax2, df, var, **kwargs_right_fill)
+          if ax2 is not None: plot_xy(ax2, df, var, **kwargs_right_fill)
 
     plot_xz(ax1, dump, var, **kwargs_left)
     # If we're not plotting in native coordinates, plot contours.
     # They are very unintuitive in native coords
     if field_overlay and not ('native' in kwargs.keys() and kwargs['native']):
         overlay_field(ax1, dump, nlines=nlines)
-    plot_xy(ax2, dump, var, **kwargs_right)
+    if ax2 is not None: plot_xy(ax2, dump, var, **kwargs_right)
     
     if "log_r" in kwargs and fill_bg:
       if kwargs['log_r']: # Hyerin (03/31/23) show where the simulation box is
@@ -463,8 +464,9 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
         ax1.add_artist(circle_out)
         circle_in = plt.Circle((0,0), r_in, color=cl, fill=False, lw=lw)
         circle_out = plt.Circle((0,0), r_out, color=cl, fill=False, lw=lw)
-        ax2.add_artist(circle_in)
-        ax2.add_artist(circle_out)
+        if ax2 is not None:
+            ax2.add_artist(circle_in)
+            ax2.add_artist(circle_out)
 
 def plot_diff_xy(ax, dump1, dump2, var, rel=False, **kwargs):
     if np.shape(dump1[var])!=np.shape(dump2[var]):
