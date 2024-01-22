@@ -3,7 +3,7 @@ __license__ = """
  
  BSD 3-Clause License
  
- Copyright (c) 2020-2022, AFD Group at UIUC
+ Copyright (c) 2020-2023, Ben Prather and AFD Group at UIUC
  All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
@@ -35,12 +35,13 @@ __license__ = """
 import os
 import sys
 
+import glob
 import numpy as np
 
 import matplotlib.pyplot as plt
 
 from .. import io
-from ..fluid_dump import FluidDump
+from ..fluid_state import FluidState
 
 from . import figures
 from .plot_dumps import *
@@ -57,6 +58,100 @@ included in pyharm so as to be imported there easily.
 The code in `figures` would be a better place to start in writing your own additional movies/plots.
 """
 
+def do_plot(fig, dump, diag, movie_type, plotrc):
+        # PLOT
+        if movie_type in figures.__dict__ and "divB" not in movie_type:
+            # Named movie frame figures in figures.py
+            fig = figures.__dict__[movie_type](fig, dump, diag, plotrc)
+        else:
+            # Try to make a simple movie of just the stated variable
+
+            # Strip off the usual annotations if we want something pretty
+            no_margin = False
+            if "_simple" in movie_type:
+                no_margin = True
+                plotrc.update({'xlabel': False, 'ylabel': False,
+                            'xticks': [], 'yticks': [],
+                            'cbar': False, 'frame': False})
+                movie_type = movie_type.replace("_simple","")
+
+            if "log_" in movie_type:
+                movie_type = movie_type.replace("log_","")
+                plotrc['log'] = True
+
+            # Various options 
+            if "_poloidal" in movie_type or "_2d" in movie_type:
+                ax = plt.subplot(1, 1, 1)
+                movie_type = movie_type.replace("_poloidal","")
+                var = movie_type
+                # HYERIN
+                no_margin = True
+                plotrc.update({'xlabel': False, 'ylabel': False,
+                    'xticks': [], 'yticks': [], 'half_cut': True, 'no_title': True,
+                            'cbar': False, 'frame': False})
+                plotrc['window'] = (0, sz, -sz, sz)
+
+                if "divB" in var:
+                    var = dump[var]
+                #plot_xz(ax, dump, var, **plotrc)
+                plot_slices(ax, None, dump, var, **plotrc)
+            elif "_toroidal" in movie_type:
+                ax = plt.subplot(1, 1, 1)
+                movie_type = movie_type.replace("_toroidal","")
+                var = movie_type
+                if "divB" in var:
+                    var = dump[var]
+                plot_xy(ax, dump, var, **plotrc)
+            elif "_av1d" in movie_type:
+                ax = plt.subplot(1, 1, 1)
+                movie_type = movie_type.replace("_av1d","")
+                var = movie_type
+                vardata = np.mean(dump[var], axis=(1,2))
+                ax.plot(dump['r1d'], vardata) # TODO some kind of radial_plot back in plot_dumps?
+
+                ax.set_ylim((plotrc['vmin'], plotrc['vmax']))
+                if plotrc['log']:
+                    ax.set_yscale('log')
+                ax.set_xlim((plotrc['window'][0], plotrc['window'][1]))
+                if plotrc['log_r']:
+                    ax.set_xscale('log')
+                # TODO multiple variables w/user title?
+                ax.grid(True, axis='both')
+                ax.set_title(pretty(var))
+            elif "_1d" in movie_type:
+                ax = plt.subplot(1, 1, 1)
+                movie_type = movie_type.replace("_1d","")
+                var = movie_type
+                sec = dump[:, 0, 0]
+                ax.plot(sec['r1d'], np.squeeze(sec[var])) # TODO some kind of radial_plot back in plot_dumps?
+
+                ax.set_ylim((plotrc['vmin'], plotrc['vmax']))
+                if plotrc['log']:
+                    ax.set_yscale('log')
+                if plotrc['window'] is not None:
+                    ax.set_xlim((plotrc['window'][0], plotrc['window'][1]))
+                if plotrc['log_r']:
+                    ax.set_xscale('log')
+                ax.grid(True, axis='both')
+                ax.set_title(pretty(var))
+            else:
+                ax_slc = [plt.subplot(1, 2, 1), plt.subplot(1, 2, 2)]
+                ax = ax_slc[0]
+                var = movie_type
+                #print("Plotting slices. plotrc: ", plotrc)
+                if "divB" in var:
+                    var = dump[var]
+                plot_slices(ax_slc[0], ax_slc[1], dump, var, **plotrc) # We'll plot the field ourselves
+
+            if no_margin:
+                fig.subplots_adjust(hspace=0, wspace=0, left=0, right=1, bottom=0, top=1)
+            else:
+                adjustrc = {}
+                for key in ('left', 'right', 'top', 'bottom', 'wspace', 'hspace'):
+                    if key in plotrc and plotrc[key] is not None:
+                        adjustrc[key] = plotrc[key]
+                fig.subplots_adjust(**adjustrc)
+
 def frame(fname, diag, kwargs):
     # If we're outside the timeframe we don't need to make *anything*
     tstart, tend = kwargs['tstart'], kwargs['tend']
@@ -64,7 +159,6 @@ def frame(fname, diag, kwargs):
     if tdump is None:
         # TODO yell about not knowing dump times
         return
-
     if (tstart is not None and tdump < float(tstart)) or \
         (tend is not None and tdump > float(tend)):
         return
@@ -79,7 +173,9 @@ def frame(fname, diag, kwargs):
             frame_folder = kwargs['frame_dir']
         else:
             frame_folder = os.path.join(os.getcwd().replace(kwargs['base_path'], kwargs['out_path']), "frames_"+movie_type)
-        if 'accurate_fnames' in kwargs and kwargs['accurate_fnames']:
+        if 'numeric_fnames' in kwargs and kwargs['numeric_fnames']:
+            frame_name = os.path.join(frame_folder, "frame_"+fname.split('.')[-2]+".png")
+        elif 'accurate_fnames' in kwargs and kwargs['accurate_fnames']:
             time_formatted = ("%.2f"%tdump).rjust(kwargs['time_digits'],'0')
             frame_name = os.path.join(frame_folder, "frame_t"+time_formatted+".png")
         else:
@@ -89,7 +185,7 @@ def frame(fname, diag, kwargs):
             continue
 
         # Load ghosts?  Set a flag and strip the option from the name
-        if "_ghost" in movie_type:
+        if "_ghost" in movie_type or kwargs['ghost_zones']:
             ghost_zones = True
             movie_type = movie_type.replace("_ghost","")
 
@@ -104,49 +200,46 @@ def frame(fname, diag, kwargs):
 
     # This just attaches the file and creates a grid.  We do need to specify
     # if any movie will need ghosts, for the index math
-    dump = FluidDump(fname, ghost_zones=ghost_zones, grid_cache=(not kwargs['no_grid_cache']))
+    dump = FluidState(fname, ghost_zones=ghost_zones, use_grid_cache=(not kwargs['no_grid_cache']), multizone=kwargs['multizone'])
     
-    dump_fill=None
-    fill_arr=[]
-    if kwargs['fill']!='-1':
-      fill_nums=kwargs['fill'].split(',')
-      fill_arr=np.array([int(num) for num in fill_nums])
+    # HYERIN TODO (01/22/24): make it supported in KHARAMAMZ class
+    dump_fill = None
+    fill_arr = []
+    if kwargs['fill'] != '-1':
+      fill_nums = kwargs['fill'].split(',')
+      fill_arr = np.array([int(num) for num in fill_nums])
       print(fill_arr)
-      splitted=fname.split('/')
-      fname_dir=fname.replace(splitted[-2]+'/'+splitted[-1],'')
-      fname_type=fname.split('.')[-1]
-      dump_fill=[]
+      splitted = fname.split('/')
+      fname_dir = fname.replace(splitted[-2]+'/'+splitted[-1],'')
+      fname_type = fname.split('.')[-1]
+      dump_fill = []
       for fn in fill_arr:
-          fname_fill=glob.glob(fname_dir+'*{:05d}'.format(fn)+'/*final.'+fname_type)[0]
-          dump_fill+=[FluidDump(fname_fill, ghost_zones=ghost_zones, grid_cache=(not kwargs['no_grid_cache']))]
+          fname_fill = glob.glob(fname_dir+'*{:05d}'.format(fn)+'/*final.'+fname_type)[0]
+          dump_fill += [FluidState(fname_fill, ghost_zones=ghost_zones, use_grid_cache=(not kwargs['no_grid_cache']))]
 
     for movie_type in movie_types:
-        # Set some plot options
+        # Set plotting options we'll pass on to figure-specific code
         plotrc = {}
-        # Copy in the equivalent options, casting them to what below code expects
-        for key in ('vmin', 'vmax', 'xmin', 'xmax', 'ymin', 'ymax', # float
-                    'left', 'right', 'top', 'bottom', 'wspace', 'hspace', # float
-                    'at', 'nlines', 'fill', # int
-                    'native', 'embed_label', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r', # bool
-                    'shading', 'cmap'): # string
-            if key in kwargs:
-                plotrc[key] = kwargs[key]
-                if key in ('vmin', 'vmax', 'xmin', 'xmax', 'ymin', 'ymax',
-                            'left', 'right', 'top', 'bottom', 'wspace', 'hspace'):
-                    # Should be floats or none
-                    if plotrc[key] is not None and plotrc[key] != "None":
-                        plotrc[key] = float(plotrc[key])
-                    else:
-                        plotrc[key] = None
-                if key in ('at', 'nlines'):
-                    # Should be ints
-                    plotrc[key] = int(plotrc[key])
-                if key in ('native', 'embed_label', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r'):
-                    # Should be bools
-                    plotrc[key] = bool(plotrc[key])
+        # Plotting options are copied from kwargs and share the same names
+        for key in ('vmin', 'vmax', 'xmin', 'xmax', 'ymin', 'ymax',
+                    'left', 'right', 'top', 'bottom', 'wspace', 'hspace'):
+            # Should be floats or none
+            try:
+                plotrc[key] = float(kwargs[key])
+            except TypeError:
+                # Make everything else None
+                plotrc[key] = None
+        for key in ('at', 'nlines'):
+            # Should be ints
+            plotrc[key] = int(kwargs[key])
+        for key in ('native', 'embed_label', 'bh', 'no_title', 'average', 'sum', 'log', 'log_r'):
+            # Should be bools
+            plotrc[key] = bool(kwargs[key])
+        for key in ('shading', 'cmap'):
+            plotrc[key] = kwargs[key] #lower()?
         
-        plotrc['fill']=fill_arr
-        plotrc['dump_fill']=dump_fill
+        plotrc['fill'] = fill_arr
+        plotrc['dump_fill'] = dump_fill
 
         # Choose a domain size 
         if kwargs['size'] is not None:
@@ -166,9 +259,9 @@ def frame(fname, diag, kwargs):
                 #    sz = dump['r_out']
                 sz = dump['r_out']
                 if plotrc['log_r']:
-                  sz=np.log10(sz)
+                  sz = np.log10(sz)
                 if ghost_zones:
-                  sz*=1.1
+                  sz *= 1.1
 
         # Choose a centered window
         # TODO 'half' and similar args for non-centered windows
@@ -177,12 +270,27 @@ def frame(fname, diag, kwargs):
             plotrc['window'] = (plotrc['xmin'], plotrc['xmax'], plotrc['ymin'], plotrc['ymax'])
             user_window = True
         elif sz is not None:
-            plotrc['window'] = (-sz, sz, -sz, sz)
+            if "1d" in movie_type:
+                plotrc['window'] = (1.0, sz)
+            else:
+                plotrc['window'] = (-sz, sz, -sz, sz)
         else:
             plotrc['window'] = None
 
+        # If our plot would be entirely outside the active window
+        # TODO account for log_r
+        # if user_window:
+        #     if dump['r_in'] > plotrc['xmax'] and dump['r_in'] > plotrc['ymax'] and \
+        #         -dump['r_in'] < plotrc['xmin'] and -dump['r_in'] < plotrc['ymin']:
+        #         return
+        #     if 'r_in_active' in dump.params:
+        #         if dump['r_in_active'] > plotrc['xmax'] and dump['r_in_active'] > plotrc['ymax'] and \
+        #             -dump['r_in_active'] < plotrc['xmin'] and -dump['r_in_active'] < plotrc['ymin']:
+        #             return
+
         #  _array plots override a bunch of things
         # Handle and strip
+        plotrc['native'] = False
         if "_array" in movie_type:
             plotrc['native'] = True
             if not user_window:
@@ -200,91 +308,36 @@ def frame(fname, diag, kwargs):
             plotrc['at'] = dump['n3']//4
         if "_poloidal" in movie_type:
             pass
+        plotrc['overlay_field'] = \
+            'overlay_field' in kwargs and kwargs['overlay_field'] #and not plotrc['native']
 
         fig = plt.figure(figsize=(kwargs['fig_x'], kwargs['fig_y']))
+        
+        # Plot the dump we were assigned
+        do_plot(fig, dump, diag, movie_type, plotrc)
 
-        # PLOT
-        if movie_type in figures.__dict__ and "divB" not in movie_type:
-            # Named movie frame figures in figures.py
-            fig = figures.__dict__[movie_type](fig, dump, diag, plotrc)
-        else:
-            # Try to make a simple movie of just the stated variable
-
-            # Strip off the usual annotations if we want something pretty
-            no_margin = False
-            if "_simple" in movie_type:
-                no_margin = True
-                plotrc.update({'xlabel': False, 'ylabel': False,
-                            'xticks': [], 'yticks': [],
-                            'cbar': False, 'frame': False})
-                movie_type = movie_type.replace("_simple","")
-
-            # Set "rho" movies to have a consistent colorbar
-            if "log_rho" in movie_type:
-                if plotrc['vmin'] is None:
-                    plotrc['vmin'] = -4
-                if plotrc['vmax'] is None:
-                    plotrc['vmax'] = 1.5
-
-            # Various options 
-            if "_poloidal" in movie_type or "_2d" in movie_type:
-                ax = plt.subplot(1, 1, 1)
-                var = movie_type.replace("_poloidal","")
-
-                # HYERIN
-                no_margin = True
-                plotrc.update({'xlabel': False, 'ylabel': False,
-                    'xticks': [], 'yticks': [], 'half_cut': True, 'no_title': True,
-                            'cbar': False, 'frame': False})
-                plotrc['window'] = (0, sz, -sz, sz)
-
-                if "divB" in var:
-                    var = dump[var]
-                #plot_xz(ax, dump, var, **plotrc)
-                plot_slices(ax, None, dump, var, **plotrc)
-            elif "_toroidal" in movie_type:
-                ax = plt.subplot(1, 1, 1)
-                var = movie_type.replace("_toroidal","")
-                if "divB" in var:
-                    var = dump[var]
-                plot_xy(ax, dump, var, **plotrc)
-            elif "_1d" in movie_type:
-                ax = plt.subplot(1, 1, 1)
-                var = movie_type.replace("_1d","")
-                sec = dump[:, 0, 0]
-                ax.plot(sec['r'], sec[var]) # TODO some kind of radial_plot back in plot_dumps?
-                ax.set_ylim((plotrc['vmin'], plotrc['vmax']))
-                # TODO multiple variables w/user title?
-                ax.set_title(pretty(var))
-            else:
-                ax_slc = [plt.subplot(1, 2, 1), plt.subplot(1, 2, 2)]
-                ax = ax_slc[0]
-                var = movie_type
-                #print("Plotting slices. plotrc: ", plotrc)
-                if "divB" == var:
-                    var = dump[var]
-                #print("vmin vmax = {} {} ".format(plotrc['vmin'],plotrc['vmax']))
-                plot_slices(ax_slc[0], ax_slc[1], dump, var, **plotrc) # We'll plot the field ourselves
-
-            if no_margin:
-                fig.subplots_adjust(hspace=0, wspace=0, left=0, right=1, bottom=0, top=1)
-            else:
-                adjustrc = {}
-                for key in ('left', 'right', 'top', 'bottom', 'wspace', 'hspace'):
-                    if key in plotrc and plotrc[key] is not None:
-                        adjustrc[key] = plotrc[key]
-                fig.subplots_adjust(**adjustrc)
+        if kwargs['multizone']:
+            # plot outlines of the current run *above* the current run
+            # use circles to avoid contour computation/ugliness
+            for ax in fig.axes:
+                if plotrc['native']:
+                    ax.axvline(dump['startx1_active'], color='r')
+                    ax.axvline(dump['stopx1_active'], color='r')
+                else:
+                    rin = np.log(dump['r_in_active']) if plotrc['log_r'] else dump['r_in_active']
+                    rout = np.log(dump['r_out_active']) if plotrc['log_r'] else dump['r_out_active']
+                    ax.add_artist(plt.Circle((0, 0), rin, facecolor=(0,0,0,0), edgecolor='r'))
+                    ax.add_artist(plt.Circle((0, 0), rout, facecolor=(0,0,0,0), edgecolor='r'))
 
         # OVERLAYS
-        if 'overlay_field' in kwargs and kwargs['overlay_field']:
+        if plotrc['overlay_field']:
             if ('native' in plotrc and plotrc['native']):
                 overlay_streamlines_xz(ax_slc[0], dump, 'B1', 'B2', color='c', embed_label=plotrc['embed_label'])
                 overlay_streamlines_xy(ax_slc[1], dump, 'B1', 'B3', color='c')
             else:
-                if 'nlines' not in plotrc:
-                    plotrc['nlines']=20
-                    plotrc['reverse']=True
-                overlay_field(ax, dump, **plotrc)
+                ax = fig.axes[0]
+                nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
+                overlay_field(ax, dump, nlines=nlines, native=plotrc['native'], log_r=plotrc['log_r'])
         #if 'overlay_quiver' in kwargs and kwargs['overlay_quiver'] and ('native' in plotrc and plotrc['native']): # added by Hyerin (05/03/23)
         #    overlay_quiver(ax, dump, **plotrc)
         if 'overlay_streamline' in kwargs and kwargs['overlay_streamline']: # added by Hyerin (06/13/23)
@@ -294,8 +347,14 @@ def frame(fname, diag, kwargs):
         #    nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
         #    overlay_flowlines(ax, dump, dump["rho"]*dump["u^1"], dump["rho"]*dump["u^2"], nlines=nlines)
         if 'overlay_grid' in kwargs and kwargs['overlay_grid']:
-            overlay_grid(ax, dump.grid)
-        # TODO contours
+            overlay_grid(ax, dump.grid, kwargs['overlay_grid_spacing'], native=plotrc['native'], log_r=plotrc['log_r'])
+        if 'overlay_blocks' in kwargs and kwargs['overlay_blocks']:
+            overlay_blocks(ax, dump, native=plotrc['native'], log_r=plotrc['log_r'])
+            if len(fig.axes) > 2: # colorbar is an axis
+                overlay_blocks_xy(fig.axes[1], dump, native=plotrc['native'], log_r=plotrc['log_r'])
+
+
+        # TODO options here, contours, etc.
 
         # TITLE
         # Always quash title when set. figures can set this too
@@ -307,9 +366,11 @@ def frame(fname, diag, kwargs):
                 # Special title for diagnostic divB
                 if "symlog" in movie_type:
                     movie_type = movie_type.replace("symlog_","")
-                divb = dump[movie_type]
-                divb_max = np.max(divb)
-                divb_argmax = np.argmax(divb)
+                #divb = dump[movie_type]
+                # movie_type might be a version calculated in post e.g. divB_prims
+                divb = dump[movie_type.replace("_poloidal","").replace("log_","")]
+                divb_max = np.nanmax(divb)
+                divb_argmax = np.nanargmax(divb)
                 fig.suptitle(r"Max $\nabla \cdot B$ = {}".format(divb_max))
                 print("divB max", divb_max, "at", np.unravel_index(divb_argmax, divb.shape))
             else:
