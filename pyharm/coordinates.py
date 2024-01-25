@@ -174,7 +174,7 @@ class CoordinateSystem(object):
         if self.ext_g:
             if (self.a>0):
                 print("WARNING: External gravity is not compatible with nonzero spin!");
-            Phi_g = (self.A/(self.B-1.)) * (np.power(r,self.B-1.)-np.power(2.,self.B-1.))
+            Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.))
             gcov_ks[0, 0] -= 2. * Phi_g
             gcov_ks[0, 1] -= 2. * Phi_g
             gcov_ks[1, 0] -= 2. * Phi_g
@@ -374,8 +374,9 @@ class KS(CoordinateSystem):
         self.small_th = 1.e-20
         self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
-            self.A = 1.46797639e-8
-            self.B = 1.29411117
+            self.ext_g_A = 1.46797639e-8
+            self.ext_g_B = 1.29411117
+            #self.Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.)) # doesn't work because of r
         
         # For avoiding coordinate singularity
         # We can usually leave this default
@@ -763,8 +764,9 @@ class BL(CoordinateSystem):
         self.a = met_params['a']
         self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
-            self.A = 1.46797639e-8
-            self.B = 1.29411117
+            self.ext_g_A = 1.46797639e-8
+            self.ext_g_B = 1.29411117
+            #self.Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.))
 
     def r(self, x):
         return x[1]
@@ -810,7 +812,7 @@ class BL(CoordinateSystem):
         if self.ext_g:
             if (self.a>0):
                 print("WARNING: External gravity is not compatible with nonzero spin!");
-            Phi_g = (self.A/(self.B-1.)) * (np.power(r,self.B-1.)-np.power(2.,self.B-1.))
+            Phi_g = (self.ext_g_A/(self.ext_g_B-1.)) * (np.power(r,self.ext_g_B-1.)-np.power(2.,self.ext_g_B-1.))
             gcov[0, 0] -= 2. * Phi_g
             gcov[1, 1] *= DD / (1. - 2./r + 2. * Phi_g)
 
@@ -829,7 +831,7 @@ class BL(CoordinateSystem):
         dxdX[3, 3] = 1
 
         if self.ext_g:
-            Phi_g = (self.A/(self.B-1.)) * (np.power(r,self.B-1.)-np.power(2.,self.B-1.))
+            Phi_g = (self.ext_g_A/(self.ext_g_B-1.)) * (np.power(r,self.ext_g_B-1.)-np.power(2.,self.ext_g_B-1.))
             dxdX[0, 1] = (2./r - 2.*Phi_g)/(1. - 2./r + 2.*Phi_g)
         return dxdX
 

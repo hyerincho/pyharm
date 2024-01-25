@@ -468,7 +468,7 @@ def blob_analyses(fig, dump, diag, plotrc):
     #plotrc['vmin']=-9; plotrc['vmax']=2
     #if plotrc['native']: overlay_streamlines_xz(ax_slc(4), dump, 'B1', 'B2', color='c')
     #plot_xz(ax_slc(4), dump, 'sigma', **plotrc)
-    plotrc['vmin']=-3; plotrc['vmax']=2
+    plotrc['vmin']=-3; plotrc['vmax']=3.5
     plot_xz(ax_slc(4), dump, 'beta', **plotrc)
     plotrc['vmin']=-1; plotrc['vmax']=5
     plot_xz(ax_slc(5), dump, 'K', **plotrc)
