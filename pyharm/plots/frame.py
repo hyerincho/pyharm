@@ -290,7 +290,7 @@ def frame(fname, diag, kwargs):
 
         #  _array plots override a bunch of things
         # Handle and strip
-        plotrc['native'] = False
+        #plotrc['native'] = False
         if "_array" in movie_type:
             plotrc['native'] = True
             if not user_window:
