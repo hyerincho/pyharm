@@ -60,6 +60,7 @@ The code in `figures` would be a better place to start in writing your own addit
 
 def do_plot(fig, dump, diag, movie_type, plotrc):
         # PLOT
+        ax_slc = None
         if movie_type in figures.__dict__ and "divB" not in movie_type:
             # Named movie frame figures in figures.py
             fig = figures.__dict__[movie_type](fig, dump, diag, plotrc)
@@ -75,6 +76,9 @@ def do_plot(fig, dump, diag, movie_type, plotrc):
                             'cbar': False, 'frame': False})
                 movie_type = movie_type.replace("_simple","")
 
+            if "symlog_" in movie_type:
+                movie_type = movie_type.replace("symlog_","")
+                plotrc['symlog'] = True
             if "log_" in movie_type:
                 movie_type = movie_type.replace("log_","")
                 plotrc['log'] = True
@@ -151,6 +155,7 @@ def do_plot(fig, dump, diag, movie_type, plotrc):
                     if key in plotrc and plotrc[key] is not None:
                         adjustrc[key] = plotrc[key]
                 fig.subplots_adjust(**adjustrc)
+        return ax_slc
 
 def frame(fname, diag, kwargs):
     # If we're outside the timeframe we don't need to make *anything*
@@ -314,7 +319,7 @@ def frame(fname, diag, kwargs):
         fig = plt.figure(figsize=(kwargs['fig_x'], kwargs['fig_y']))
         
         # Plot the dump we were assigned
-        do_plot(fig, dump, diag, movie_type, plotrc)
+        ax_slc = do_plot(fig, dump, diag, movie_type, plotrc)
 
         if kwargs['multizone']:
             # plot outlines of the current run *above* the current run
@@ -370,9 +375,10 @@ def frame(fname, diag, kwargs):
                 # movie_type might be a version calculated in post e.g. divB_prims
                 divb = dump[movie_type.replace("_poloidal","").replace("log_","")]
                 divb_max = np.nanmax(divb)
-                divb_argmax = np.nanargmax(divb)
-                fig.suptitle(r"Max $\nabla \cdot B$ = {}".format(divb_max))
-                print("divB max", divb_max, "at", np.unravel_index(divb_argmax, divb.shape))
+                if 1:
+                    divb_argmax = np.nanargmax(divb)
+                    fig.suptitle(r"Max $\nabla \cdot B$ = {}".format(divb_max))
+                    print("divB max", divb_max, "at", np.unravel_index(divb_argmax, divb.shape))
             else:
                 # Title by tdump, which is time if available, else dump number
                 fig.suptitle("t = {}".format(int(tdump)))

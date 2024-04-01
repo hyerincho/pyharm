@@ -278,6 +278,8 @@ class KHARMAFile(DumpFile):
                 out = np.zeros((4, *out_shape), dtype=astype)
             elif var.split(".")[-1][:1] == "B" or var.split(".")[-1] == "uvec": # We cache the whole thing even for an index
                 out = np.zeros((3, *out_shape), dtype=astype)
+            elif var.split(".")[-1] == "fB": # face-centered fields need one more indices TODO: not tested with multiple blocks!
+                out = np.zeros((3, *(np.array(out_shape)+1)), dtype=astype)
             else:
                 out = np.zeros(out_shape, dtype=astype)
 

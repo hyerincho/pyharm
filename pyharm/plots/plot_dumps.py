@@ -130,10 +130,13 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
             log = True
             var = var.replace("log_","")
         vname = var
-        uff = 1./np.sqrt(dump["r"]) # free fall velocity
-        cs0 = 1./dump["rs"] # sound speed at infinity
-        uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
-        uK = np.power(dump["r"],-3./2) # Keplerian velocity
+        if "over" in var:
+            uff = 1./np.sqrt(dump["r"]) # free fall velocity
+            uK = np.power(dump["r"],-3./2) # Keplerian velocity
+        if "over_uchar" in var:
+            try: cs0 = 1./dump["rs"] # sound speed at infinity
+            except: cs0 = 0
+            uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
         if "u^r_over_uff" in var:
             var = dump["u^r"]/uff
         elif "u^r_over_uchar" in var:
@@ -143,10 +146,13 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
         elif "u^phi_over_uK" in var:
             var = dump["u^phi"]/uK
 
+    if average:
+        if np.isnan(var).any(): norm = ((~np.isnan(var)).astype(int)).sum(-1)
+        else: norm = dump['n3']
     x, z = dump.grid.get_xz_locations(mesh=(shading == 'flat'), native=native, half_cut=(half_cut or native), log_r=log_r, embed_label=embed_label)
     var = flatten_xz(dump, var, at, sum or average, half_cut or native)
     if average:
-        var /= dump['n3']
+        var /= norm
     if shading != 'flat':
         x = wrap(x)
         z = wrap(z)
@@ -223,7 +229,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
     return mesh
 
 def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
-            xlabel=True, ylabel=True, native=False, log=False,
+            xlabel=True, ylabel=True, native=False, log=False, symlog=False,
             cmap='jet', shading='gouraud',
             at=None, average=False, sum=False, cbar=True, log_r=False, **kwargs):
     """Plot a toroidal or X1/X3 slice of a dump file.
@@ -244,7 +250,6 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         return None
 
     vname = None
-    symlog=False
     if isinstance(var, str):
         if 'symlog_' in var:
             log = True
@@ -254,10 +259,13 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             log = True
             var = var.replace("log_","")
         vname = var
-        uff = 1./np.sqrt(dump["r"]) # free fall velocity
-        cs0 = 1./dump["rs"] # sound speed at infinity
-        uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
-        uK = np.power(dump["r"],-3./2) # Keplerian velocity
+        if "over" in var:
+            uff = 1./np.sqrt(dump["r"]) # free fall velocity
+            uK = np.power(dump["r"],-3./2) # Keplerian velocity
+        if "over_uchar" in var:
+            try: cs0 = 1./dump["rs"] # sound speed at infinity
+            except: cs0 = 0
+            uchar = np.sqrt(uff**2+cs0**2) # characteristic velocity
         if "u^r_over_uff" in var:
             var = dump["u^r"]/uff
         elif "u^r_over_uchar" in var:

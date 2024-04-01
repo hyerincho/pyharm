@@ -101,12 +101,13 @@ def parse_parthenon_dat(string):
     # This parser expects [section], and uses indents for line continuation
     # Otherwise it should match the Parthenon input deck spec exactly & flexibly
     config = configparser.ConfigParser(inline_comment_prefixes=(';','#','&'))
+    config.optionxform = str
     config.read_string(string.replace("<","[").replace(">","]"))
 
     # Pick out some keys we usually put in the base parameters
     flatten_blocks = ['parthenon/mesh', 'coordinates', 'parthenon/time', 'GRMHD', 'emhd',
                       'electrons', 'torus', 'emhdmodes', 'bondi_viscous', 'bondi',
-                      'resize_restart']
+                      'resize_restart', 'b_field', 'gizmo_shell']
     # Flatten entries from some blocks the way we've always done it, for compatibility
     for block in flatten_blocks:
         if block in config:

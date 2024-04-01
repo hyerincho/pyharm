@@ -112,7 +112,7 @@ class ExtensibleCmd(click.Command):
 @click.option('--no_title', is_flag=True, help="Omit a plot title e.g. of simulation time.")
 # Dump file plotting options
 @click.option('-g','--ghost_zones', is_flag=True, help="Plot ghost zones.")
-@click.option('-at','--at','--at_zone', 'at', default=0, help="Phi zone to plot at.")
+@click.option('-at','--at','--at_zone', 'at', default=5, help="Phi zone to plot at.")
 @click.option('-av','--av','--average', 'average', is_flag=True, help="Average quantities over phi.")
 @click.option('--sum', is_flag=True, help="Sum quantities over phi.")
 @click.option('-sh','--sh','--shading', 'shading', default='flat', help="Shading: flat, nearest, gouraud.")

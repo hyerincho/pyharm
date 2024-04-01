@@ -458,15 +458,16 @@ def blob_analyses(fig, dump, diag, plotrc):
     plotrc['xlabel'] = True #False
     #plotrc['xticks'] = []
     plotrc['log']=True
+    plotrc['at']=dump["nx3"]//2
     plotrc['vmin']=-9; plotrc['vmax']=-1
     plot_xz(ax_slc(1), dump, 'rho', **plotrc)
-    plotrc['vmin']=-5; plotrc['vmax']=2
+    plotrc['vmin']=-6; plotrc['vmax']=2
     plot_xz(ax_slc(2), dump, 'Theta', **plotrc)
     plotrc['vmin']=-1e2; plotrc['vmax']=1e2
     #ax_slc(3).set_title(r'$log_{10}(u^r/u_{\rm ff})$')
     plot_xz(ax_slc(3), dump, 'u^r_over_uff', **plotrc)
     #plotrc['vmin']=-9; plotrc['vmax']=2
-    #if plotrc['native']: overlay_streamlines_xz(ax_slc(4), dump, 'B1', 'B2', color='c')
+    if plotrc['native'] and not plotrc['embed_label']: overlay_streamlines_xz(ax_slc(4), dump, 'B1', 'B2', color='c', at=plotrc['at'])
     #plot_xz(ax_slc(4), dump, 'sigma', **plotrc)
     plotrc['vmin']=-3; plotrc['vmax']=3.5
     plot_xz(ax_slc(4), dump, 'beta', **plotrc)

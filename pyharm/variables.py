@@ -62,10 +62,10 @@ fns_dict = {# 4-vectors
             'bcon_base': lambda dump: np.einsum("i...,ij...->j...", dump["bcon"], dump['dxdX']),
             'bcov_base': lambda dump: np.einsum("i...,ij...->j...", dump["bcov"], dump['dXdx']),
             # Versions in Cartesian
-            'ucon_cart': lambda dump: np.einsum("i...,ij...->j...", dump["ucon_base"], dump['dXdx_cart']),
-            'ucov_cart': lambda dump: np.einsum("i...,ij...->j...", dump["ucov_base"], dump['dxdX_cart']),
-            'bcon_cart': lambda dump: np.einsum("i...,ij...->j...", dump["bcon_base"], dump['dXdx_cart']),
-            'bcov_cart': lambda dump: np.einsum("i...,ij...->j...", dump["bcov_base"], dump['dxdX_cart']),
+            'ucon_cart': lambda dump: np.einsum("i...,ij...->j...", dump["ucon_base"], dump['dxdX_cart']),
+            'ucov_cart': lambda dump: np.einsum("i...,ij...->j...", dump["ucov_base"], dump['dXdx_cart']),
+            'bcon_cart': lambda dump: np.einsum("i...,ij...->j...", dump["bcon_base"], dump['dxdX_cart']),
+            'bcov_cart': lambda dump: np.einsum("i...,ij...->j...", dump["bcov_base"], dump['dXdx_cart']),
             # Versions in BL
             'ucon_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dXdx_bl'], dump['ucon_base']),
             'ucov_bl': lambda dump: np.einsum("ij...,j...->i...", dump['dxdX_bl'], dump['ucov_base']),
@@ -104,6 +104,7 @@ fns_dict = {# 4-vectors
             'FE_EN': lambda dump: -TEN_mixed(dump, 1, 0),
             'FE_KE': lambda dump: -TFl_mixed(dump,1,0) + TEN_mixed(dump, 1, 0),
             'FE_norho': lambda dump: -T_mixed(dump, 1, 0) - dump['rho']*dump['ucon'][1],
+            'Fp': lambda dump: dump['RHO'] * dump['ucon'][1] * dump['ucov'][1],#T_mixed(dump, 1, 1),
             'FL': lambda dump: T_mixed(dump, 1, 3),
             'FL_EM': lambda dump: TEM_mixed(dump, 1, 3),
             'FL_Fl': lambda dump: TFl_mixed(dump, 1, 3),

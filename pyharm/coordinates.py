@@ -374,8 +374,8 @@ class KS(CoordinateSystem):
         self.small_th = 1.e-20
         self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
-            self.ext_g_A = 1.46797639e-8
-            self.ext_g_B = 1.29411117
+            self.ext_g_A = 4.24621057e-9 #1.46797639e-8
+            self.ext_g_B = 1.35721335 #1.29411117
             #self.Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.)) # doesn't work because of r
         
         # For avoiding coordinate singularity
@@ -764,8 +764,8 @@ class BL(CoordinateSystem):
         self.a = met_params['a']
         self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
         if self.ext_g:
-            self.ext_g_A = 1.46797639e-8
-            self.ext_g_B = 1.29411117
+            self.ext_g_A = 4.24621057e-9 #1.46797639e-8
+            self.ext_g_B = 1.35721335 #1.29411117
             #self.Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.))
 
     def r(self, x):

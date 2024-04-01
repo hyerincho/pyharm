@@ -228,14 +228,14 @@ def overlay_flowlines(ax, dump, varx1, varx2, levels=None, nlines=20, color='k',
 
     return levels
 
-def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native=True, half_cut=False, embed_label=False):
+def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native=True, half_cut=False, embed_label=False, at=None):
     """ Added by Hyerin (06/13/23) streamlines of flows"""
     if embed_label: 
         print("embed_label not supported to overlay streamline.")
         return
     if native: half_cut = True
-    varx1 = flatten_xz(dump, varx1, sum=False, half_cut=half_cut) / dump['n3'] * np.squeeze(dump['gdet']) # modified by Hyerin (05/03/23), do I need to multiply gdet?
-    varx2 = flatten_xz(dump, varx2, sum=False, half_cut=half_cut) / dump['n3'] * np.squeeze(dump['gdet'])
+    varx1 = flatten_xz(dump, varx1, sum=False, half_cut=half_cut, at=at) / dump['n3'] * np.squeeze(dump['gdet']) # modified by Hyerin (05/03/23), do I need to multiply gdet?
+    varx2 = flatten_xz(dump, varx2, sum=False, half_cut=half_cut, at=at) / dump['n3'] * np.squeeze(dump['gdet'])
     x, z = dump.grid.get_xz_locations(native=True, half_cut=half_cut, embed_label=False)
     
     s1 = np.maximum(dump['n1'] // cadence,1)
