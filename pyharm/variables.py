@@ -131,8 +131,10 @@ fns_dict = {# 4-vectors
             'lam_MRI_old': lambda dump: lam_MRI_old(dump),
             'lam_MRI_transform': lambda dump: lam_MRI_transform(dump),
             'divB_prims': lambda dump: divB(dump.grid, dump['B']),
+            'divB_prims_rel': lambda dump: divB(dump.grid, dump['B']) / np.sqrt((dump['B'] ** 2).sum(axis=0)) / dump["gdet"] * dump["dx1"],
             'divB_cons': lambda dump: divB_cons(dump.grid, dump['cons.B']),
-            'divB_cons_rel': lambda dump: divB_cons(dump.grid, dump['cons.B']) / dump['b'] / dump["gdet"] * dump["dx1"],
+            #'divB_cons_rel': lambda dump: divB_cons(dump.grid, dump['cons.B']) / dump['b'] / dump["gdet"] * dump["dx1"],
+            'divB_cons_rel': lambda dump: divB_cons(dump.grid, dump['cons.B']) / np.sqrt((dump['cons.B'] ** 2).sum(axis=0)) * dump["dx1"],
             # Electrons: largely need units
             'Thetap': lambda dump: (dump['gam_p'] - 1) * dump['UU'] / dump['RHO'],
             'Thetae': lambda dump: (dump['gam_e'] - 1) * dump['UU'] / dump['RHO'],

@@ -1,4 +1,4 @@
-__license__ = """
+_license__ = """
  File: frame.py
  
  BSD 3-Clause License

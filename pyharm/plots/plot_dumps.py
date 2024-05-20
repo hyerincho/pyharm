@@ -145,6 +145,9 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
             var = dump["Be_b"]/uff**2
         elif "u^phi_over_uK" in var:
             var = dump["u^phi"]/uK
+        elif "vA_over_u^r" in var:
+            #var = dump["vA"]/(dump["u^1"]/dump["u^0"])
+            var = dump["vA"]/(dump["u^r"])
 
     if average:
         if np.isnan(var).any(): norm = ((~np.isnan(var)).astype(int)).sum(-1)
@@ -162,8 +165,12 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
     if symlog or (log and np.any(var < 0.0)):
         if cmap == 'jet':
             cmap = 'RdBu_r'
+        if 'linthresh' in kwargs:
+            linthresh = kwargs["linthresh"]
+        else:
+            linthresh = None
         mesh = pcolormesh_symlog(ax, x, z, var, cmap=cmap, vmin=vmin, vmax=vmax,
-                                 shading=shading, cbar=cbar, mask=mask) # Use this cbar, it's customized
+                                 shading=shading, cbar=cbar, mask=mask, linthresh=linthresh) # Use this cbar, it's customized
         cbar = False # We don't need another later on
     elif log:
         # Support legacy calling convention
@@ -182,10 +189,11 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
             if xlabel: ax.set_xlabel(r"$\log_{\rm 10}(r)$")
             if ylabel: ax.set_ylabel(r"$\theta$")
         else:
-            secax = ax.secondary_xaxis('top', functions=(nat2l10, l102nat))
+            spherical = ("minkowski" not in dump['coordinates']) and ("cartesian" not in dump['coordinates'])
+            if spherical: secax = ax.secondary_xaxis('top', functions=(nat2l10, l102nat))
             if xlabel: 
                 ax.set_xlabel("X1 (native coordinates)")
-                secax.set_xlabel("log r")
+                if spherical: secax.set_xlabel("log r")
             if ylabel: ax.set_ylabel("X2 (native coordinates)")
         if window:
             ax.set_xlim(window[:2])
@@ -274,6 +282,9 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             var = dump["Be_b"]/uff**2
         elif "u^phi_over_uK" in var:
             var = dump["u^phi"]/uK
+        elif "vA_over_u^r" in var:
+            #var = dump["vA"]/(dump["u^1"]/dump["u^0"])
+            var = dump["vA"]/(dump["u^r"])
 
 
     x, y = dump.grid.get_xy_locations(mesh=(shading == 'flat'), native=native, log_r=log_r)

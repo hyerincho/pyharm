@@ -489,6 +489,46 @@ def blob_analyses(fig, dump, diag, plotrc):
     fig.tight_layout()
     return fig
 
+def bflux0_test(fig, dump, diag, plotrc):
+    ax_slc = lambda i: plt.subplot(1, 2, i)
+    plotrc['cbar'] = True
+    plotrc['native'] = True
+    plotrc['embed_label'] = False
+    if dump["nx3"] == 1: plotrc['at'] = 0
+    plotrc['symlog'] = True
+    overlay_streamlines_xz(ax_slc(1), dump, 'u1', 'u2', embed_label=False, at=plotrc['at'])
+    if dump["nx3"] > 1:
+        b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
+        overlay_streamlines_xz(ax_slc(1), dump, 'B1', 'B2', color='c', embed_label=False, at=plotrc['at'])
+        overlay_streamlines_xy(ax_slc(2), dump, 'u1', 'u3')
+        overlay_streamlines_xy(ax_slc(2), dump, 'B1', 'B3', color='c')
+        plotrc['vmin'] = -1e1; plotrc['vmax'] = 1e1
+        ax_slc(1).set_title(r'$\Delta B2/B_0$')
+        plot_xz(ax_slc(1), dump, (dump['B2']-dump["B20"])/b0, **plotrc)
+        ax_slc(2).set_title(r'$\Delta B3/B_0$')
+        plotrc['at'] = None
+        plot_xy(ax_slc(2), dump, (dump['B3']-dump["B30"])/b0, **plotrc)
+    else:
+        #if dump["type"] == "constant": 
+        b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
+        #elif dump["type"] == "wave": 
+        #    b0 = np.sqrt(dump["amp_B1"]**2 + dump["amp_B2"]**2 + dump["amp_B3"]**2 + dump["amp2_B1"]**2 + dump["amp2_B2"]**2 + dump["amp2_B3"]**2)
+        overlay_streamlines_xz(ax_slc(2), dump, 'B1', 'B2', color='c', at=plotrc['at'])
+        #plotrc['vmin'] = -1e-2; plotrc['vmax'] = 1e-2
+        #ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0, max}$')
+        #plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
+        plotrc['vmin'] = -10; plotrc['vmax'] = 10
+        ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0}$')
+        plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
+        plotrc['vmin'] = -10; plotrc['vmax'] = 10
+        ax_slc(2).set_title(r'$B2/B_{\rm 0}$')
+        plot_xz(ax_slc(2), dump, (dump['B2'])/b0, **plotrc)
+
+    fig.suptitle("t = {}".format(int(dump['t'])))
+    fig.tight_layout()
+    return fig
+
+
 def old_floors(fig, dump, diag, plotrc):
     """Plot floor hits from iharm3d output
     """
