@@ -206,12 +206,14 @@ def vecs_prim(fig, dump, diag, plotrc):
     ax_slc = lambda i: plt.subplot(2, 4, i)
     # Usual movie: RHO beta fluxes
     # CUTS
-    plotrc['average'] = True
+    #plotrc['average'] = True
     plotrc['log'] = True
-    plot_slices(ax_slc(1), ax_slc(5), dump, 'rho', *plotrc)
+    plot_slices(ax_slc(1), ax_slc(5), dump, 'rho', **plotrc)
+    radial_scaling = np.power(dump["r"], 2) # not sure if this is right to do, because E1 is in code coordinates
 
     for i,var in zip((2,3,4,6,7,8), ("U1", "U2", "U3", "B1", "B2", "B3")):
-        plot_xz(ax_slc(i), dump, var, **plotrc)
+        #plot_xz(ax_slc(i), dump, var, **plotrc)
+        plot_xz(ax_slc(i), dump, dump[var] * radial_scaling, **plotrc)
     
     return fig
 
@@ -465,6 +467,7 @@ def blob_analyses(fig, dump, diag, plotrc):
     plot_xz(ax_slc(2), dump, 'Theta', **plotrc)
     plotrc['vmin']=-1e2; plotrc['vmax']=1e2
     #ax_slc(3).set_title(r'$log_{10}(u^r/u_{\rm ff})$')
+    if plotrc['native'] and not plotrc['embed_label']: overlay_streamlines_xz(ax_slc(3), dump, 'u^1', 'u^2', embed_label=plotrc['embed_label'], at=plotrc['at'])
     plot_xz(ax_slc(3), dump, 'u^r_over_uff', **plotrc)
     #plotrc['vmin']=-9; plotrc['vmax']=2
     if plotrc['native'] and not plotrc['embed_label']: overlay_streamlines_xz(ax_slc(4), dump, 'B1', 'B2', color='c', at=plotrc['at'])
@@ -486,6 +489,7 @@ def blob_analyses(fig, dump, diag, plotrc):
     #plot_xz(ax_slc(8), dump, -dump["TEM^0_0"]/dump["rho"],label=r'-$T^0_{\rm 0, EM}/\rho$', **plotrc)
     #fig.subplots_adjust(hspace=0.1, wspace=0.12, left=0.05, right=0.95, bottom=0.05, top=0.92)
     fig.suptitle("t = {}".format(int(dump['t'])))
+    
     fig.tight_layout()
     return fig
 
@@ -497,32 +501,39 @@ def bflux0_test(fig, dump, diag, plotrc):
     if dump["nx3"] == 1: plotrc['at'] = 0
     plotrc['symlog'] = True
     overlay_streamlines_xz(ax_slc(1), dump, 'u1', 'u2', embed_label=False, at=plotrc['at'])
-    if dump["nx3"] > 1:
-        b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
+    if dump["parthenon/job/problem_id"] == "bondi":
         overlay_streamlines_xz(ax_slc(1), dump, 'B1', 'B2', color='c', embed_label=False, at=plotrc['at'])
         overlay_streamlines_xy(ax_slc(2), dump, 'u1', 'u3')
         overlay_streamlines_xy(ax_slc(2), dump, 'B1', 'B3', color='c')
-        plotrc['vmin'] = -1e1; plotrc['vmax'] = 1e1
-        ax_slc(1).set_title(r'$\Delta B2/B_0$')
-        plot_xz(ax_slc(1), dump, (dump['B2']-dump["B20"])/b0, **plotrc)
-        ax_slc(2).set_title(r'$\Delta B3/B_0$')
-        plotrc['at'] = None
-        plot_xy(ax_slc(2), dump, (dump['B3']-dump["B30"])/b0, **plotrc)
+        plotrc['vmin']=-3; plotrc['vmax']=3.5
+        plot_xz(ax_slc(1), dump, 'log_beta', **plotrc)
     else:
-        #if dump["type"] == "constant": 
-        b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
-        #elif dump["type"] == "wave": 
-        #    b0 = np.sqrt(dump["amp_B1"]**2 + dump["amp_B2"]**2 + dump["amp_B3"]**2 + dump["amp2_B1"]**2 + dump["amp2_B2"]**2 + dump["amp2_B3"]**2)
-        overlay_streamlines_xz(ax_slc(2), dump, 'B1', 'B2', color='c', at=plotrc['at'])
-        #plotrc['vmin'] = -1e-2; plotrc['vmax'] = 1e-2
-        #ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0, max}$')
-        #plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
-        plotrc['vmin'] = -10; plotrc['vmax'] = 10
-        ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0}$')
-        plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
-        plotrc['vmin'] = -10; plotrc['vmax'] = 10
-        ax_slc(2).set_title(r'$B2/B_{\rm 0}$')
-        plot_xz(ax_slc(2), dump, (dump['B2'])/b0, **plotrc)
+        if dump["nx3"] > 1:
+            b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
+            overlay_streamlines_xz(ax_slc(1), dump, 'B1', 'B2', color='c', embed_label=False, at=plotrc['at'])
+            overlay_streamlines_xy(ax_slc(2), dump, 'u1', 'u3')
+            overlay_streamlines_xy(ax_slc(2), dump, 'B1', 'B3', color='c')
+            plotrc['vmin'] = -1e1; plotrc['vmax'] = 1e1
+            ax_slc(1).set_title(r'$\Delta B2/B_0$')
+            plot_xz(ax_slc(1), dump, (dump['B2']-dump["B20"])/b0, **plotrc)
+            ax_slc(2).set_title(r'$\Delta B3/B_0$')
+            plotrc['at'] = None
+            plot_xy(ax_slc(2), dump, (dump['B3']-dump["B30"])/b0, **plotrc)
+        else:
+            #if dump["type"] == "constant": 
+            b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
+            #elif dump["type"] == "wave": 
+            #    b0 = np.sqrt(dump["amp_B1"]**2 + dump["amp_B2"]**2 + dump["amp_B3"]**2 + dump["amp2_B1"]**2 + dump["amp2_B2"]**2 + dump["amp2_B3"]**2)
+            overlay_streamlines_xz(ax_slc(2), dump, 'B1', 'B2', color='c', at=plotrc['at'])
+            #plotrc['vmin'] = -1e-2; plotrc['vmax'] = 1e-2
+            #ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0, max}$')
+            #plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
+            plotrc['vmin'] = -10; plotrc['vmax'] = 10
+            ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0}$')
+            plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
+            plotrc['vmin'] = -10; plotrc['vmax'] = 10
+            ax_slc(2).set_title(r'$B2/B_{\rm 0}$')
+            plot_xz(ax_slc(2), dump, (dump['B2'])/b0, **plotrc)
 
     fig.suptitle("t = {}".format(int(dump['t'])))
     fig.tight_layout()
@@ -541,4 +552,127 @@ def old_floors(fig, dump, diag, plotrc):
     for i,ff in enumerate(FloorFlag_iharm3d):
         plot_xz(ax_slc(2+i), dump, dump['fflag'] & ff.value, label=ff.name, **plotrc)
 
+    return fig
+
+def electric_field(fig, dump, diag, plotrc):
+    """ Electric fields """
+    ax_slc = lambda i: plt.subplot(2, 3, i)
+    max_E = 0.5#0.05
+    plotrc['vmin'] = -max_E
+    plotrc['vmax'] = max_E
+    plotrc['symlog'] = True
+    radial_scaling = np.power(dump["r"], 2) # not sure if this is right to do, because E1 is in code coordinates
+    plot_xz(ax_slc(1), dump, dump['E1'] * radial_scaling, label='E1', **plotrc)
+    plot_xz(ax_slc(2), dump, dump['E2'] * radial_scaling, label='E2', **plotrc)
+    plot_xz(ax_slc(3), dump, dump['E3'] * radial_scaling * (np.sin(dump["th"])), label='E3 sinth', **plotrc)
+    plot_xz(ax_slc(4), dump, dump['B1'] * radial_scaling, label='B1', **plotrc)
+    plot_xz(ax_slc(5), dump, dump['B2'] * radial_scaling, label='B2', **plotrc)
+    plot_xz(ax_slc(6), dump, dump['B3'] * radial_scaling * (np.sin(dump["th"])), label='B3 sinth', **plotrc)
+    # using ideal MHD assumption to get electric fields
+    #plot_xz(ax_slc(4), dump, (dump['U2'] * dump["B3"] - dump["U3"] * dump["B2"]) * radial_scaling * dump["r"] * (np.sin(dump["th"])), label='E1', **plotrc)
+    #plot_xz(ax_slc(5), dump, (dump['U3'] * dump["B1"] - dump["U1"] * dump["B3"]) * radial_scaling * dump["r"] * (np.sin(dump["th"])), label='E2', **plotrc)
+    #plot_xz(ax_slc(6), dump, (dump['U1'] * dump["B2"] - dump["U2"] * dump["B1"]) * radial_scaling * dump["r"], label='E3', **plotrc)
+    #plot_xz(ax_slc(4), dump, -dump['B_CT.emf'][0,:-1,:-1,:-1], label='E1', **plotrc)
+    #plot_xz(ax_slc(5), dump, -dump['B_CT.emf'][1,:-1,:-1,:-1], label='E2', **plotrc)
+    #plot_xz(ax_slc(6), dump, -dump['B_CT.emf'][2,:-1,:-1,:-1], label='E3', **plotrc)
+
+    ## poynting flux
+    #plot_xz(ax_slc(7), dump, -(dump["E2"] * dump["B3"] - dump["E3"] * dump["B2"]) * radial_scaling * dump["r"]**2 * (np.sin(dump["th"])), label='ExB1', **plotrc)
+    #plot_xz(ax_slc(8), dump, (dump["FE_EM"]) * dump["gdet"], label='FE_EM', **plotrc)
+    # TODO: why is gdet != r^2*sin(th)?
+    # TODO: why is ExB sign negative?
+    # TODO B1, B2, B3, poyinting flux, v cross B
+
+    return fig
+
+def ismr_test(fig, dump, diag, plotrc):
+    """ figure out why the ISMR + bflux bc is behaving weird """
+    ax_slc = lambda i: plt.subplot(1, 4, i)
+    bg = "u" #"rho" #'Theta'
+    max_E = 1e2
+    #bg = 'u^r_over_uff'
+    #max_E = 1e2
+    #bg = dump['B3'] * dump["r"]**2 * np.sin(dump["th"])
+    #max_E = 0.5
+    #bg = dump["FE_norho"] * dump["gdet"]
+    #max_E = 1e-3
+    plotrc['vmin'] = 1e-12 #1e-6 #100 #-max_E
+    plotrc['vmax'] = 10 #1e-1 #1e-6 #max_E
+    plotrc['symlog'] = False #True
+    plotrc['log'] = True
+    plotrc['native'] = True
+    ng = (np.shape(dump["r"])[0] - dump["nx1"]) // 2
+    for i in range(4):
+        plotrc['at'] = i + ng
+        overlay_streamlines_xy(ax_slc(i+1), dump, 'B1', 'B3', at=plotrc['at'])
+        plot_xy(ax_slc(i+1), dump, bg, label='j='+str(i), **plotrc)
+
+def feedback_analyses(fig, dump, diag, plotrc):
+    """In-depth analyses of feedback form
+    """
+    ax_slc = lambda i: plt.subplot(2, 3, i)
+    plotrc['xlabel'] = True #False
+    #plotrc['xticks'] = []
+    plotrc['symlog']=True
+    ng = (np.shape(dump["r"])[0] - dump["nx1"]) // 2
+    plotrc['at']=ng + 4
+    vmax=1e-2 # 1e-3
+    plotrc['vmin']=-vmax; plotrc['vmax']=vmax
+    ax_slc(1).set_title('Total')
+    ax_slc(2).set_title('Fluid')
+    ax_slc(3).set_title('EM')
+    plot_xz(ax_slc(1), dump, dump['FE_norho_A'], **plotrc)
+    plot_xz(ax_slc(2), dump, dump['FE_Fl_norho_A'], **plotrc)
+    plot_xz(ax_slc(3), dump, dump['FE_EM_A'], **plotrc)
+    plot_xy(ax_slc(4), dump, dump['FE_norho_A'], **plotrc)
+    plot_xy(ax_slc(5), dump, dump['FE_Fl_norho_A'], **plotrc)
+    plot_xy(ax_slc(6), dump, dump['FE_EM_A'], **plotrc)
+    fig.suptitle("t = {}".format(int(dump['t'])))
+    fig.tight_layout()
+    return fig
+
+def bflux0_test(fig, dump, diag, plotrc):
+    ax_slc = lambda i: plt.subplot(1, 2, i)
+    plotrc['cbar'] = True
+    plotrc['native'] = True
+    plotrc['embed_label'] = False
+    if dump["nx3"] == 1: plotrc['at'] = 0
+    plotrc['symlog'] = True
+    overlay_streamlines_xz(ax_slc(1), dump, 'u1', 'u2', embed_label=False, at=plotrc['at'])
+    if dump["parthenon/job/problem_id"] == "bondi":
+        overlay_streamlines_xz(ax_slc(1), dump, 'B1', 'B2', color='c', embed_label=False, at=plotrc['at'])
+        overlay_streamlines_xy(ax_slc(2), dump, 'u1', 'u3')
+        overlay_streamlines_xy(ax_slc(2), dump, 'B1', 'B3', color='c')
+        plotrc['vmin']=-3; plotrc['vmax']=3.5
+        plot_xz(ax_slc(1), dump, 'log_beta', **plotrc)
+    else:
+        if dump["nx3"] > 1:
+            b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
+            overlay_streamlines_xz(ax_slc(1), dump, 'B1', 'B2', color='c', embed_label=False, at=plotrc['at'])
+            overlay_streamlines_xy(ax_slc(2), dump, 'u1', 'u3')
+            overlay_streamlines_xy(ax_slc(2), dump, 'B1', 'B3', color='c')
+            plotrc['vmin'] = -1e1; plotrc['vmax'] = 1e1
+            ax_slc(1).set_title(r'$\Delta B2/B_0$')
+            plot_xz(ax_slc(1), dump, (dump['B2']-dump["B20"])/b0, **plotrc)
+            ax_slc(2).set_title(r'$\Delta B3/B_0$')
+            plotrc['at'] = None
+            plot_xy(ax_slc(2), dump, (dump['B3']-dump["B30"])/b0, **plotrc)
+        else:
+            #if dump["type"] == "constant": 
+            b0 = np.sqrt(dump["B10"]**2 + dump["B20"]**2 + dump["B30"]**2)
+            #elif dump["type"] == "wave": 
+            #    b0 = np.sqrt(dump["amp_B1"]**2 + dump["amp_B2"]**2 + dump["amp_B3"]**2 + dump["amp2_B1"]**2 + dump["amp2_B2"]**2 + dump["amp2_B3"]**2)
+            overlay_streamlines_xz(ax_slc(2), dump, 'B1', 'B2', color='c', at=plotrc['at'])
+            #plotrc['vmin'] = -1e-2; plotrc['vmax'] = 1e-2
+            #ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0, max}$')
+            #plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
+            plotrc['vmin'] = -10; plotrc['vmax'] = 10
+            ax_slc(1).set_title(r'$\Delta B1/B_{\rm 0}$')
+            plot_xz(ax_slc(1), dump, (dump['B1']-b0)/b0, **plotrc)
+            plotrc['vmin'] = -10; plotrc['vmax'] = 10
+            ax_slc(2).set_title(r'$B2/B_{\rm 0}$')
+            plot_xz(ax_slc(2), dump, (dump['B2'])/b0, **plotrc)
+
+    fig.suptitle("t = {}".format(int(dump['t'])))
+    fig.tight_layout()
     return fig

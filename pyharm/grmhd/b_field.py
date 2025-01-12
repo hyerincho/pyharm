@@ -121,3 +121,15 @@ def divB_cons(G, B):
     divB_full[s.b, s.b, s.b] = divB
 
     return divB_full
+
+def divB_cons_dimless(dump):
+    G = dump.grid
+    B = dump["cons.B"]
+
+    # TODO: should use characteristic B fields instead
+    #den = np.sqrt((dump['cons.B'] ** 2).sum(axis=0)) / dump["dx1"] 
+    den = np.sqrt(np.power(dump['cons.B'][0] / dump["dx1"], 2.) + 
+                np.power(dump['cons.B'][1] / dump["dx2"], 2.) + 
+                np.power(dump['cons.B'][2] / dump["dx3"], 2.))
+
+    return divB_cons(G, B) / den

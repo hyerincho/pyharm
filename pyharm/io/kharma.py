@@ -184,6 +184,9 @@ class KHARMAFile(DumpFile):
         params['phdf_aux']['isGhost'] = fil.isGhost
         params['phdf_aux']['BlockIdx'] = fil.BlockIdx
         params['phdf_aux']['BlockBounds'] = fil.BlockBounds
+        
+        # added by Hyerin
+        params['Params'] = fil.Params
 
         fil.fid.close()
         del fil
@@ -279,6 +282,8 @@ class KHARMAFile(DumpFile):
             elif var.split(".")[-1][:1] == "B" or var.split(".")[-1] == "uvec": # We cache the whole thing even for an index
                 out = np.zeros((3, *out_shape), dtype=astype)
             elif "fB" in var: # face-centered fields need one more indices TODO: not tested with multiple blocks!
+                out = np.zeros((3, *(np.array(out_shape)+1)), dtype=astype)
+            elif "emf" in var: # edge-centered fields need one more indices TODO: not tested with multiple blocks!
                 out = np.zeros((3, *(np.array(out_shape)+1)), dtype=astype)
             else:
                 out = np.zeros(out_shape, dtype=astype)

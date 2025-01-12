@@ -98,14 +98,20 @@ fns_dict = {# 4-vectors
             'FM_A': lambda dump: dump['RHO'] * dump['ucon'][1]* dump['gdet'],
             'FE': lambda dump: -T_mixed(dump, 1, 0),
             'FE_EM': lambda dump: -TEM_mixed(dump, 1, 0),
+            'FE_EM_A': lambda dump: -TEM_mixed(dump, 1, 0) * dump['gdet'],
             'FE_Fl': lambda dump: -TFl_mixed(dump, 1, 0),
+            'FE_Fl_A': lambda dump: -TFl_mixed(dump, 1, 0) * dump['gdet'],
+            'FE_Fl_norho': lambda dump: -TFl_mixed(dump, 1, 0) - dump['rho']*dump['ucon'][1],
+            'FE_Fl_norho_A': lambda dump: dump['FE_Fl_norho'] * dump['gdet'],
             'FE_PAKE': lambda dump: -TPAKE_mixed(dump, 1, 0),
             'FE_PAKE_A': lambda dump: -TPAKE_mixed(dump, 1, 0)*dump['gdet'],
             'FE_EN': lambda dump: -TEN_mixed(dump, 1, 0),
             'FE_KE': lambda dump: -TFl_mixed(dump,1,0) + TEN_mixed(dump, 1, 0),
             'FE_norho': lambda dump: -T_mixed(dump, 1, 0) - dump['rho']*dump['ucon'][1],
+            'FE_norho_A': lambda dump: dump['FE_norho'] * dump["gdet"],
             'Fp': lambda dump: dump['RHO'] * dump['ucon'][1] * dump['ucov'][1],#T_mixed(dump, 1, 1),
             'FL': lambda dump: T_mixed(dump, 1, 3),
+            'FL_A': lambda dump: T_mixed(dump, 1, 3) * dump['gdet'],
             'FL_EM': lambda dump: TEM_mixed(dump, 1, 3),
             'FL_Fl': lambda dump: TFl_mixed(dump, 1, 3),
             # Energy current
@@ -116,7 +122,8 @@ fns_dict = {# 4-vectors
             # Bernoulli parameter
             'Be_b': lambda dump: bernoulli(dump, with_B=True),
             'Be_nob': lambda dump: bernoulli(dump, with_B=False),
-            'betagamma': lambda dump: np.sqrt((dump['FE'] / dump['FM'])**2 - 1),
+            'betagamma': lambda dump: np.sqrt(dump['Gamma'] ** 2 - 1), 
+            #np.sqrt((dump['FE'] / dump['FM'])**2 - 1),
             # Luminosity proxy (Porth et al '19)
             'lumproxy': lambda dump: lum_proxy(dump),
             # Jet area measure
@@ -133,8 +140,10 @@ fns_dict = {# 4-vectors
             'divB_prims': lambda dump: divB(dump.grid, dump['B']),
             'divB_prims_rel': lambda dump: divB(dump.grid, dump['B']) / np.sqrt((dump['B'] ** 2).sum(axis=0)) / dump["gdet"] * dump["dx1"],
             'divB_cons': lambda dump: divB_cons(dump.grid, dump['cons.B']),
+            'divB_cons_norm': lambda dump: divB_cons(dump.grid, dump['cons.B']) / dump["gdet"],
             #'divB_cons_rel': lambda dump: divB_cons(dump.grid, dump['cons.B']) / dump['b'] / dump["gdet"] * dump["dx1"],
-            'divB_cons_rel': lambda dump: divB_cons(dump.grid, dump['cons.B']) / np.sqrt((dump['cons.B'] ** 2).sum(axis=0)) * dump["dx1"],
+            #'divB_cons_rel': lambda dump: divB_cons(dump.grid, dump['cons.B']) / np.sqrt((dump['cons.B'] ** 2).sum(axis=0)) * dump["dx1"],
+            'divB_cons_rel': lambda dump: divB_cons_dimless(dump),
             # Electrons: largely need units
             'Thetap': lambda dump: (dump['gam_p'] - 1) * dump['UU'] / dump['RHO'],
             'Thetae': lambda dump: (dump['gam_e'] - 1) * dump['UU'] / dump['RHO'],
@@ -142,7 +151,11 @@ fns_dict = {# 4-vectors
             # TODO: electron temps from file, maybe as parsed?
             'jI': lambda dump: jnu(dump),
             # Extended MHD variables
-            'dP0': lambda dump: braginskii_dP(dump)
+            'dP0': lambda dump: braginskii_dP(dump),
+            # Electric fields
+            'E1': lambda dump: F_con(dump, 1, 0),
+            'E2': lambda dump: F_con(dump, 2, 0),
+            'E3': lambda dump: F_con(dump, 3, 0)
             }
 
 ## Physics functions ##
@@ -417,3 +430,11 @@ def _pp(P):
         return 1
     else:
         return -1
+
+# Added by Hyerin (11/30/24) electric field
+def EMF(dump, v):
+    T_con(dump, v, 0)
+    #EMF = 0
+    #for u in range(4):
+    #    EMF += -T_mixed(dump, v, u) * dump["ucon"][u]
+    #return EMF

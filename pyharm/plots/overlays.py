@@ -242,10 +242,10 @@ def overlay_streamlines_xz(ax, dump, varx1, varx2, cadence=64, color='k', native
     s2 = np.maximum(dump['n2'] // cadence,1)
     ax.streamplot(np.transpose(x[::s1, ::s2]), np.transpose(z[::s1, ::s2]), np.transpose(varx1[::s1, ::s2]), np.transpose(varx2[::s1, ::s2]), color=color)
 
-def overlay_streamlines_xy(ax, dump, varx1, varx2, cadence=64, color='k', native=True):
+def overlay_streamlines_xy(ax, dump, varx1, varx2, cadence=64, color='k', native=True, at=None):
     """ Added by Hyerin (06/13/23) streamlines of flows"""
-    varx1 = flatten_xy(dump, varx1, sum=False) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
-    varx2 = flatten_xy(dump, varx2, sum=False) / dump['n3'] * dump['gdet'][:,:,0]
+    varx1 = flatten_xy(dump, varx1, at, sum=False) / dump['n3'] * dump['gdet'][:,:,0] # modified by Hyerin (05/03/23)
+    varx2 = flatten_xy(dump, varx2, at, sum=False) / dump['n3'] * dump['gdet'][:,:,0]
     x, y = dump.grid.get_xy_locations(native=native)
 
     s1 = np.maximum(dump['n1'] // cadence,1)

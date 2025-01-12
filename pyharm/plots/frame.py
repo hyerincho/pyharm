@@ -316,6 +316,9 @@ def frame(fname, diag, kwargs):
         plotrc['overlay_field'] = \
             'overlay_field' in kwargs and kwargs['overlay_field'] #and not plotrc['native']
 
+        if "electric_field" in movie_type:
+            kwargs['fig_x'] = 18
+            kwargs['fig_y'] = 6
         fig = plt.figure(figsize=(kwargs['fig_x'], kwargs['fig_y']))
         
         # Plot the dump we were assigned
@@ -337,8 +340,11 @@ def frame(fname, diag, kwargs):
         # OVERLAYS
         if plotrc['overlay_field']:
             if ('native' in plotrc and plotrc['native']):
-                overlay_streamlines_xz(ax_slc[0], dump, 'B1', 'B2', color='c', embed_label=plotrc['embed_label'])
-                overlay_streamlines_xy(ax_slc[1], dump, 'B1', 'B3', color='c')
+                if dump["n3"] > 1:
+                    overlay_streamlines_xz(ax_slc[0], dump, 'B1', 'B2', color='c', embed_label=plotrc['embed_label'])
+                    overlay_streamlines_xy(ax_slc[1], dump, 'B1', 'B3', color='c')
+                else:
+                    overlay_streamlines_xz(ax_slc[0], dump, 'B1', 'B2', color='c', at=0, embed_label=plotrc['embed_label'])
             else:
                 ax = fig.axes[0]
                 nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
@@ -346,8 +352,11 @@ def frame(fname, diag, kwargs):
         #if 'overlay_quiver' in kwargs and kwargs['overlay_quiver'] and ('native' in plotrc and plotrc['native']): # added by Hyerin (05/03/23)
         #    overlay_quiver(ax, dump, **plotrc)
         if 'overlay_streamline' in kwargs and kwargs['overlay_streamline']: # added by Hyerin (06/13/23)
-            overlay_streamlines_xz(ax_slc[0], dump, 'u^1', 'u^2', embed_label=plotrc['embed_label'])
-            overlay_streamlines_xy(ax_slc[1], dump, 'u^1', 'u^3')
+            if dump["n3"] > 1:
+                overlay_streamlines_xz(ax_slc[0], dump, 'u^1', 'u^2', embed_label=plotrc['embed_label'])
+                overlay_streamlines_xy(ax_slc[1], dump, 'u^1', 'u^3')
+            else:
+                overlay_streamlines_xz(ax_slc[0], dump, 'u1', 'u2', embed_label=plotrc['embed_label'], at=0)
         #if 'overlay_flow' in kwargs and kwargs['overlay_flow'] and not ('native' in plotrc and plotrc['native']):
         #    nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
         #    overlay_flowlines(ax, dump, dump["rho"]*dump["u^1"], dump["rho"]*dump["u^2"], nlines=nlines)

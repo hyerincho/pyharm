@@ -202,6 +202,12 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
             # Just set to th
             ax.set_xlim([np.min(x), np.max(x)])
             ax.set_ylim([np.min(z), np.max(z)])
+        # added by Hyerin (12/27/24)
+        if "Multizone/active_rin" in dump["Params"]:
+            active_rin = dump["Params"]["Multizone/active_rin"]
+            active_rout = dump["Params"]["Multizone/active_rout"]
+            ax.axvline(np.log(active_rin), color='k')
+            ax.axvline(np.log(active_rout), color='k')
     elif log_r:
         if xlabel: ax.set_xlabel(r"$x$ ($r \rightarrow \ln(r)$)")
         if ylabel: ax.set_ylabel(r"$z$ ($r \rightarrow \ln(r)$)")
@@ -334,6 +340,12 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             #ax.set_ylim([y[0,0], y[-1,-1]]) # modified by Hyerin (05/03/23)
             ax.set_xlim([np.min(x), np.max(x)])
             ax.set_ylim([np.min(y), np.max(y)])
+        # added by Hyerin (12/27/24)
+        if "Multizone/active_rin" in dump["Params"]:
+            active_rin = dump["Params"]["Multizone/active_rin"]
+            active_rout = dump["Params"]["Multizone/active_rout"]
+            ax.axvline(np.log(active_rin), color='k')
+            ax.axvline(np.log(active_rout), color='k')
     elif log_r:
         if xlabel: ax.set_xlabel(r"$x$ ($r \rightarrow \ln(r)$)")
         if ylabel: ax.set_ylabel(r"$y$ ($r \rightarrow \ln(r)$)")
@@ -470,10 +482,13 @@ def plot_slices(ax1, ax2, dump, var, field_overlay=False, nlines=10, **kwargs):
         overlay_field(ax1, dump, nlines=nlines)
     if ax2 is not None: plot_xy(ax2, dump, var, **kwargs_right)
     
-    if "log_r" in kwargs and fill_bg:
-      if kwargs['log_r']: # Hyerin (03/31/23) show where the simulation box is
-        r_in=np.log10(dump["r_in"])
-        r_out=np.log10(dump["r_out"])
+    if fill_bg:
+        if kwargs['log_r']: # Hyerin (03/31/23) show where the simulation box is
+            r_in=np.log10(dump["r_in"])
+            r_out=np.log10(dump["r_out"])
+        else:
+            r_in = dump["r_in"]
+            r_out = dump["r_out"]
         lw = 3
         cl='k'
         circle_in = plt.Circle((0,0), r_in, color=cl, fill=False, lw=lw)
