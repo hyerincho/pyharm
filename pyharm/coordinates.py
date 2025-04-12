@@ -152,33 +152,31 @@ class CoordinateSystem(object):
         cth = np.cos(th)
         sth = np.sin(th)
 
-        s2 = sth ** 2
-        rho2 = r ** 2 + self.a ** 2 * cth ** 2
-
-        gcov_ks[0, 0] = -1 + 2 * r / rho2
-        gcov_ks[0, 1] = 2 * r / rho2
-        gcov_ks[0, 3] = -2 * self.a * r * s2 / rho2
-
-        gcov_ks[1, 0] = gcov_ks[0, 1]
-        gcov_ks[1, 1] = 1. + 2. * r / rho2
-        gcov_ks[1, 3] = -self.a * s2 * (1. + 2. * r / rho2)
-
-        gcov_ks[2, 2] = rho2
-
-        gcov_ks[3, 0] = gcov_ks[0, 3]
-        gcov_ks[3, 1] = gcov_ks[1, 3]
-        gcov_ks[3, 3] = s2 * (rho2 + self.a ** 2 * s2 * (1. + 2. * r / rho2))
-
+        Phi_g = 0.
         if 'ext_g' not in self.__dict__:
             self.ext_g = False
         if self.ext_g:
-            if (self.a>0):
-                print("WARNING: External gravity is not compatible with nonzero spin!");
             Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.))
-            gcov_ks[0, 0] -= 2. * Phi_g
-            gcov_ks[0, 1] -= 2. * Phi_g
-            gcov_ks[1, 0] -= 2. * Phi_g
-            gcov_ks[1, 1] -= 2. * Phi_g
+
+        F = (1. / r - Phi_g) * r ** 2
+        Delta = (1 - 2. / r + 2 * Phi_g) * r ** 2 + self.a ** 2
+        Sigma = r ** 2 + self.a ** 2 * cth ** 2
+        Pi = (r ** 2 + self.a ** 2) ** 2 - Delta * self.a ** 2 * sth ** 2
+
+        gcov_ks[0, 0] = - (1. - 2. * F / Sigma) #-1 + 2 * r / rho2
+        gcov_ks[0, 1] = 2. * F / Sigma #2 * r / rho2
+        gcov_ks[0, 3] = -2. * F * self.a * sth ** 2 / Sigma #-2 * self.a * r * s2 / rho2
+
+        gcov_ks[1, 0] = gcov_ks[0, 1]
+        gcov_ks[1, 1] = 1. + 2. * F / Sigma #1. + 2. * r / rho2
+        gcov_ks[1, 3] = -(1. + 2. * F / Sigma) * self.a * sth ** 2 #-self.a * s2 * (1. + 2. * r / rho2)
+
+        gcov_ks[2, 2] = Sigma #rho2
+
+        gcov_ks[3, 0] = gcov_ks[0, 3]
+        gcov_ks[3, 1] = gcov_ks[1, 3]
+        gcov_ks[3, 3] = Pi * sth ** 2 / Sigma #s2 * (rho2 + self.a ** 2 * s2 * (1. + 2. * r / rho2))
+
 
         return gcov_ks
 
@@ -793,46 +791,46 @@ class BL(CoordinateSystem):
         gcov = np.zeros([4, 4, *(x.shape[1:])])
         r, th, _ = self.bl_coord(x)
         sth = np.abs(np.sin(th))
-        s2 = sth * sth
         cth = np.cos(th)
-        a2 = self.a**2
-        r2 = r**2
-        DD = 1. - 2. / r + a2 / r2
-        mu = 1. + a2 * cth**2 / r2
-
-        gcov[0, 0] = -(1. - 2. / (r * mu))
-        gcov[0, 3] = -2. * self.a * s2 / (r * mu)
-        gcov[3, 0] = gcov[0, 3]
-        gcov[1, 1] = mu / DD
-        gcov[2, 2] = r2 * mu
-        gcov[3, 3] = r2 * sth * sth * (1. + a2 / r2 + 2. * a2 * s2 / (r2 * r * mu))
         
+        Phi_g = 0.
         if 'ext_g' not in self.__dict__:
             self.ext_g = False
         if self.ext_g:
-            if (self.a>0):
-                print("WARNING: External gravity is not compatible with nonzero spin!");
-            Phi_g = (self.ext_g_A/(self.ext_g_B-1.)) * (np.power(r,self.ext_g_B-1.)-np.power(2.,self.ext_g_B-1.))
-            gcov[0, 0] -= 2. * Phi_g
-            gcov[1, 1] *= DD / (1. - 2./r + 2. * Phi_g)
+            Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.))
 
+        F = (1. / r - Phi_g) * r ** 2
+        Delta = (1 - 2. / r + 2 * Phi_g) * r ** 2 + self.a ** 2
+        Sigma = r ** 2 + self.a ** 2 * cth ** 2
+        Pi = (r ** 2 + self.a ** 2) ** 2 - Delta * self.a ** 2 * sth ** 2
+
+        gcov[0, 0] = -(1. - 2. * F / Sigma)#-(1. - 2. / (r * mu))
+        gcov[0, 3] = -2. * F * self.a * sth ** 2 / Sigma #-2. * self.a * s2 / (r * mu)
+        gcov[3, 0] = gcov[0, 3]
+        gcov[1, 1] = Sigma / Delta #mu / DD
+        gcov[2, 2] = Sigma #r2 * mu
+        gcov[3, 3] = Pi * sth ** 2 / Sigma #r2 * sth * sth * (1. + a2 / r2 + 2. * a2 * s2 / (r2 * r * mu))
+        
         return gcov
 
     def dxdX(self, x):
         """Transformation matrix for vectors from BL to KS"""
         dxdX = np.zeros([4, 4, *x.shape[1:]])
         r, _, _ = self.bl_coord(x)
+ 
+        Phi_g = 0.
+        if self.ext_g:
+            Phi_g = (self.ext_g_A / (self.ext_g_B - 1.)) * (np.power(r, self.ext_g_B - 1.) - np.power(2., self.ext_g_B - 1.))
+        F = (1. / r - Phi_g) * r ** 2
+        Delta = (1 - 2. / r + 2 * Phi_g) * r ** 2 + self.a ** 2
 
         dxdX[0, 0] = 1
-        dxdX[0, 1] = 2. * r / (r**2 - 2.*r + self.a**2)
+        dxdX[0, 1] = 2. * F / Delta #2. * r / (r**2 - 2.*r + self.a**2)
         dxdX[1, 1] = 1
         dxdX[2, 2] = 1
-        dxdX[3, 1] = self.a / (r**2 - 2.*r + self.a**2)
+        dxdX[3, 1] = self.a / Delta #self.a / (r**2 - 2.*r + self.a**2)
         dxdX[3, 3] = 1
 
-        if self.ext_g:
-            Phi_g = (self.ext_g_A/(self.ext_g_B-1.)) * (np.power(r,self.ext_g_B-1.)-np.power(2.,self.ext_g_B-1.))
-            dxdX[0, 1] = (2./r - 2.*Phi_g)/(1. - 2./r + 2.*Phi_g)
         return dxdX
 
 class MKS3(CoordinateSystem):
