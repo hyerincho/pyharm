@@ -42,6 +42,7 @@ from pyharm.coordinates import *
 
 def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
                    poly_xt=0.82, poly_alpha=14.0, mks_smooth=0.5, lin_frac=0.6, smoothness=0.03,
+                   njet=4, k=10,
                    r_in=None, r_out=1000, caches=True, cache_conn=False):
     """Convenience function for generating grids with particular known parameters.
 
@@ -84,6 +85,10 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
             params['mks_smooth'] = mks_smooth
         if system == 'wks':
             params['lin_frac'] = lin_frac
+            params['smoothness'] = smoothness
+        if system == 'jks':
+            params['njet'] = njet
+            params['k'] = k
             params['smoothness'] = smoothness
 
     return Grid(params, caches=caches, cache_conn=cache_conn)
@@ -210,6 +215,8 @@ class Grid:
             self.coords = BL(params)
         elif params['coordinates'] == "wks":
             self.coords = WKS(params)
+        elif params['coordinates'] == "jks":
+            self.coords = JKS(params)
         else:
             raise ValueError("metric is {}!! must be minkowski, mks, mmks, or fmks".format(params['coordinates']))
 

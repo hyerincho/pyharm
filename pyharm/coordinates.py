@@ -992,3 +992,91 @@ class WKS(KS):
         dxdX[2, 2] = np.pi / 2. * (2. * self.lin_frac + (1. - self.lin_frac) / (self.smoothness * np.power(np.cosh((x[2] - 1.) / self.smoothness),2.)) + (1. - self.lin_frac) / (self.smoothness * np.power(np.cosh(-x[2] / self.smoothness),2.)))
         dxdX[3, 3] = 1
         return dxdX
+
+class JKS(KS):
+    # Jet KS
+    def __init__(self, met_params=default_met_params):
+        self.njet = met_params['njet']
+        self.smoothness = met_params['smoothness']
+        try: self.k = met_params['k']
+        except: self.k = -1
+        self.n2 = met_params['n2']
+        if self.k <= 0:
+            self.k = np.max(2, self.n2 / self.njet) * 2
+        self.x2_crit = 1./2. - self.njet / self.n2
+        super(JKS, self).__init__(met_params)
+
+    def native_startx(self, met_params):
+        # TODO take direct 'startx' from met params?
+        if 'startx1' in met_params and 'startx2' in met_params and 'startx3' in met_params:
+            startx = np.array([0, met_params['startx1'], met_params['startx2'], met_params['startx3']])
+        elif 'r_in' in met_params:
+            # Set startx1 from r_in
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1tot' in met_params and 'r_out' in met_params:
+            # Else via a guess, which we propagate back to the originating parameter file
+            met_params['r_in'] = np.exp((met_params['n1tot'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                        (-1. + met_params['n1tot'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1' in met_params and 'r_out' in met_params:
+            # Or a more questionable guess
+            met_params['r_in'] = np.exp((met_params['n1'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                        (-1. + met_params['n1'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        else:
+            print("The only parameters provided to native_startx were: ", met_params)
+            raise ValueError("Cannot find or guess startx!")
+        return startx
+
+    def native_stopx(self, met_params):
+        if 'r_out' in met_params:
+            return np.array([0, np.log(met_params['r_out']), 1, 2*np.pi])
+        elif ('startx1' in met_params and 'dx1' in met_params and 'n1' in met_params and
+              'startx2' in met_params and 'dx2' in met_params and 'n2' in met_params and
+              'startx3' in met_params and 'dx3' in met_params and 'n3' in met_params):
+            return np.array([0, met_params['startx1'] + met_params['n1']*met_params['dx1'],
+                            met_params['startx2'] + met_params['n2']*met_params['dx2'],
+                            met_params['startx3'] + met_params['n3']*met_params['dx3']])
+        else:
+            raise ValueError("Cannot find or guess stopx!")
+
+
+    def r(self, x):
+        return np.exp(x[1])
+
+    def th(self, x):
+        def switch(s):
+            return (np.tanh(s) + 1.) / 2.
+        a = (1./2. - 1./(self.k * np.sqrt(np.exp(x[1])))) / (self.x2_crit)
+        b = (1./2. - a * self.x2_crit) / (1./2. - self.x2_crit)
+        s1 = switch((x[2] - self.x2_crit - 1./2.) / self.smoothness)
+        s2 = switch((x[2] + self.x2_crit - 1./2.) / self.smoothness)
+        th_out = (1./2. + a * (x[2] - 1./2.)) * (1. - s1) * s2 + \
+                (b * (x[2] - self.x2_crit - 1/2) + 1./2. + a * self.x2_crit) * s1 + \
+                (b * (x[2] + self.x2_crit - 1/2) + 1./2. - a * self.x2_crit) * (1. - s2)
+        th_out *= np.pi
+        return self.correct_small_th(th_out)
+
+    def dxdX(self, x):
+        def switch(s):
+            return (np.tanh(s) + 1.) / 2.
+        a = (1./2. - 1./(self.k * np.sqrt(np.exp(x[1])))) / (self.x2_crit)
+        b = (1./2. - a * self.x2_crit) / (1./2. - self.x2_crit)
+        x21 = (x[2] - self.x2_crit - 1./2.) / self.smoothness
+        x22 = (x[2] + self.x2_crit - 1./2.) / self.smoothness
+        s1 = switch(x21)
+        s2 = switch(x22)
+        dadx1 = np.exp(-x[1] / 2) / (2 * self.k * self.x2_crit)
+        dbdx1 = - self.x2_crit / (1./2. - self.x2_crit) * dadx1
+        dxdX = np.zeros([4, 4, *x.shape[1:]])
+        dxdX[0, 0] = 1
+        dxdX[1, 1] = np.exp(x[1])
+        dxdX[2, 2] = np.pi * (a * (1. - s1) * s2 + b * s1 + b * (1. - s2) + \
+                (1./2. + a * (x[2] - 1./2.)) * (-s2 / (np.power(np.cosh(x21), 2.) * 2 * self.smoothness) + (1. - s1) / (np.power(np.cosh(x22, 2.) * 2 * self.smoothness))) + \
+                (b * (x[2] - self.x2_crit - 1/2) + 1./2. + a * self.x2_crit) / (np.power(np.cosh(x21), 2.) * 2 * self.smoothness) - \
+                (b * (x[2] + self.x2_crit - 1/2) + 1./2. - a * self.x2_crit) / (np.power(np.cosh(x22), 2.) * 2 * self.smoothness))
+        dxdX[2, 1] = np.pi * (x[2] * dadx1 * (1. - s1) * s2 + \
+                ((x[2] - self.x2_crit - 1./2.) * dbdx1 + self.x2_crit * dadx1) * s1 + \
+                ((x[2] + self.x2_crit - 1./2.) * dbdx1 - self.x2_crit * dadx1) * (1. - s2))
+        dxdX[3, 3] = 1
+        return dxdX
