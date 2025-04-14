@@ -91,6 +91,8 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
             params['kjet'] = kjet
             params['pjet'] = pjet
             params['smoothness'] = smoothness
+        if system == 'jks2':
+            params['smoothness'] = smoothness
 
     return Grid(params, caches=caches, cache_conn=cache_conn)
 
