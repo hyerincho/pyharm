@@ -997,7 +997,8 @@ class JKS(KS):
     # Jet KS
     def __init__(self, met_params=default_met_params):
         self.njet = met_params['njet']
-        self.pjet = met_params['pjet']
+        try: self.pjet = met_params['pjet']
+        except: self.pjet = 2.0
         self.smoothness = met_params['smoothness']
         try: self.kjet = met_params['kjet']
         except: self.kjet = -1
