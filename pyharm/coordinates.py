@@ -1141,7 +1141,7 @@ class JKS2(KS):
         dxdX = np.zeros([4, 4, *x.shape[1:]])
         dxdX[0, 0] = 1
         dxdX[1, 1] = np.exp(x[1])
-        dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime)) * alpha * np.tanh(0.5 / alpha))
+        dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
         dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
                                     np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(xprime), 2.)))
         dxdX[3, 3] = 1
