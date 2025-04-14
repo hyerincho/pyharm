@@ -218,6 +218,8 @@ class Grid:
             self.coords = WKS(params)
         elif params['coordinates'] == "jks":
             self.coords = JKS(params)
+        elif params['coordinates'] == "jks2":
+            self.coords = JKS2(params)
         else:
             raise ValueError("metric is {}!! must be minkowski, mks, mmks, or fmks".format(params['coordinates']))
 
