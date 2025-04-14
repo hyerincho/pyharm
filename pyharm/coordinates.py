@@ -997,12 +997,13 @@ class JKS(KS):
     # Jet KS
     def __init__(self, met_params=default_met_params):
         self.njet = met_params['njet']
+        self.pjet = met_params['pjet']
         self.smoothness = met_params['smoothness']
-        try: self.k = met_params['k']
-        except: self.k = -1
+        try: self.kjet = met_params['kjet']
+        except: self.kjet = -1
         self.n2 = met_params['n2']
-        if self.k <= 0:
-            self.k = np.max(2, self.n2 / self.njet) * 2
+        if self.kjet <= 0:
+            self.kjet = np.max([2., self.n2 / self.njet]) * 2
         self.x2_crit = 1./2. - self.njet / self.n2
         super(JKS, self).__init__(met_params)
 
@@ -1047,7 +1048,8 @@ class JKS(KS):
     def th(self, x):
         def switch(s):
             return (np.tanh(s) + 1.) / 2.
-        a = (1./2. - 1./(self.k * np.sqrt(np.exp(x[1])))) / (self.x2_crit)
+        #a = (1./2. - 1./(self.kjet * np.sqrt(np.exp(x[1])))) / (self.x2_crit)
+        a = (1./2. - 1./(self.kjet * np.exp(x[1] * (1. - 1. / self.pjet)))) / (self.x2_crit)
         b = (1./2. - a * self.x2_crit) / (1./2. - self.x2_crit)
         s1 = switch((x[2] - self.x2_crit - 1./2.) / self.smoothness)
         s2 = switch((x[2] + self.x2_crit - 1./2.) / self.smoothness)
@@ -1060,22 +1062,24 @@ class JKS(KS):
     def dxdX(self, x):
         def switch(s):
             return (np.tanh(s) + 1.) / 2.
-        a = (1./2. - 1./(self.k * np.sqrt(np.exp(x[1])))) / (self.x2_crit)
+        #a = (1./2. - 1./(self.kjet * np.sqrt(np.exp(x[1])))) / (self.x2_crit)
+        a = (1./2. - 1./(self.kjet * np.exp(x[1] * (1. - 1. / self.pjet)))) / (self.x2_crit)
         b = (1./2. - a * self.x2_crit) / (1./2. - self.x2_crit)
         x21 = (x[2] - self.x2_crit - 1./2.) / self.smoothness
         x22 = (x[2] + self.x2_crit - 1./2.) / self.smoothness
         s1 = switch(x21)
         s2 = switch(x22)
-        dadx1 = np.exp(-x[1] / 2) / (2 * self.k * self.x2_crit)
+        #dadx1 = np.exp(-x[1] / 2) / (2 * self.kjet * self.x2_crit)
+        dadx1 = np.exp(x[1] * (1./self.pjet - 1.)) * (1. - 1. / self.pjet) / (self.kjet * self.x2_crit)
         dbdx1 = - self.x2_crit / (1./2. - self.x2_crit) * dadx1
         dxdX = np.zeros([4, 4, *x.shape[1:]])
         dxdX[0, 0] = 1
         dxdX[1, 1] = np.exp(x[1])
         dxdX[2, 2] = np.pi * (a * (1. - s1) * s2 + b * s1 + b * (1. - s2) + \
-                (1./2. + a * (x[2] - 1./2.)) * (-s2 / (np.power(np.cosh(x21), 2.) * 2 * self.smoothness) + (1. - s1) / (np.power(np.cosh(x22, 2.) * 2 * self.smoothness))) + \
-                (b * (x[2] - self.x2_crit - 1/2) + 1./2. + a * self.x2_crit) / (np.power(np.cosh(x21), 2.) * 2 * self.smoothness) - \
-                (b * (x[2] + self.x2_crit - 1/2) + 1./2. - a * self.x2_crit) / (np.power(np.cosh(x22), 2.) * 2 * self.smoothness))
-        dxdX[2, 1] = np.pi * (x[2] * dadx1 * (1. - s1) * s2 + \
+                (1./2. + a * (x[2] - 1./2.)) * (-s2 / (np.power(np.cosh(x21), 2.) * 2 * self.smoothness) + (1. - s1) / (np.power(np.cosh(x22), 2.) * 2 * self.smoothness)) + \
+                (b * (x[2] - self.x2_crit - 1./2.) + 1./2. + a * self.x2_crit) / (np.power(np.cosh(x21), 2.) * 2 * self.smoothness) - \
+                (b * (x[2] + self.x2_crit - 1./2.) + 1./2. - a * self.x2_crit) / (np.power(np.cosh(x22), 2.) * 2 * self.smoothness))
+        dxdX[2, 1] = np.pi * ((x[2] - 1./2.) * dadx1 * (1. - s1) * s2 + \
                 ((x[2] - self.x2_crit - 1./2.) * dbdx1 + self.x2_crit * dadx1) * s1 + \
                 ((x[2] + self.x2_crit - 1./2.) * dbdx1 - self.x2_crit * dadx1) * (1. - s2))
         dxdX[3, 3] = 1

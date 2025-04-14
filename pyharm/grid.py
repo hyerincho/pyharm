@@ -42,7 +42,7 @@ from pyharm.coordinates import *
 
 def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
                    poly_xt=0.82, poly_alpha=14.0, mks_smooth=0.5, lin_frac=0.6, smoothness=0.03,
-                   njet=4, k=10,
+                   njet=8, kjet=8, pjet=2.,
                    r_in=None, r_out=1000, caches=True, cache_conn=False):
     """Convenience function for generating grids with particular known parameters.
 
@@ -88,7 +88,8 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
             params['smoothness'] = smoothness
         if system == 'jks':
             params['njet'] = njet
-            params['k'] = k
+            params['kjet'] = kjet
+            params['pjet'] = pjet
             params['smoothness'] = smoothness
 
     return Grid(params, caches=caches, cache_conn=cache_conn)
