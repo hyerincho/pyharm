@@ -36,6 +36,7 @@ import numpy as np
 # Need extra broadcasting currently, or this would be scipy.linalg
 import numpy.linalg as la
 import scipy.optimize as opt
+import pdb
 
 __doc__ = \
 """This file defines a bunch of handy functions for working in or translating between
@@ -1131,18 +1132,220 @@ class JKS2(KS):
         return np.exp(x[1])
 
     def th(self, x):
-        alpha = self.smoothness / x[1]
+        alpha = self.smoothness / (x[1] + 0.5)
         th_out = np.pi / 2. * (1. + np.tanh((x[2] - 0.5) / alpha) / np.tanh(0.5 / alpha))
         return self.correct_small_th(th_out)
 
     def dxdX(self, x):
-        alpha = self.smoothness / x[1]
+        alpha = self.smoothness / (x[1] + 0.5)
         xprime = (x[2] - 0.5) / alpha
         dxdX = np.zeros([4, 4, *x.shape[1:]])
         dxdX[0, 0] = 1
         dxdX[1, 1] = np.exp(x[1])
         dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
         dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
-                                    np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(xprime), 2.)))
+                                    np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(0.5 / alpha), 2.)))
+        dxdX[3, 3] = 1
+        return dxdX
+
+class JKSKoral(KS):
+    # Jet KS Koral version (Ressler +17), copied from (https://github.com/achael/koral_lite/blob/master/metric.c)
+    def __init__(self, met_params=default_met_params):
+        # radial coordinate parameters
+        self.r0 = met_params['mksr0']
+        self.rbrk = met_params['rbrk']
+
+        # poloidal coordinate parameters
+        self.cylindrify = met_params['cylindrify']
+        self.rdecoll_disk = met_params['rdecoll_disk']
+        self.rdecoll_jet = met_params['rdecoll_jet']
+        self.rcoll_disk = met_params['rcoll_disk']
+        self.rcoll_jet = met_params['rcoll_jet']
+        self.runi = met_params['runi']
+        self.alpha1 = met_params['alpha1']
+        self.alpha2 = met_params['alpha2']
+        self.rcyl = met_params['rcyl']
+        self.ncyl = met_params['ncyl']
+        self.x2cyl = met_params['startx2'] + 0.5 * self.ncyl / met_params['n2tot']
+        self.rmidcyl = 0.5 * (self.rcyl + met_params['r_in'])
+        self.fdisk = met_params['fdisk']
+        self.fjet = met_params['fjet']
+
+        super(JKSKoral, self).__init__(met_params)
+
+    def native_startx(self, met_params):
+        # TODO take direct 'startx' from met params?
+        if 'startx1' in met_params and 'startx2' in met_params and 'startx3' in met_params:
+            startx = np.array([0, met_params['startx1'], met_params['startx2'], met_params['startx3']])
+        elif 'r_in' in met_params:
+            # Set startx1 from r_in
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1tot' in met_params and 'r_out' in met_params:
+            # Else via a guess, which we propagate back to the originating parameter file
+            met_params['r_in'] = np.exp((met_params['n1tot'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                        (-1. + met_params['n1tot'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        elif 'n1' in met_params and 'r_out' in met_params:
+            # Or a more questionable guess
+            met_params['r_in'] = np.exp((met_params['n1'] * np.log(self.r_eh) / 5.5 - np.log(met_params['r_out'])) /
+                                        (-1. + met_params['n1'] / 5.5))
+            startx = np.array([0, np.log(met_params['r_in']), 0, 0])
+        else:
+            print("The only parameters provided to native_startx were: ", met_params)
+            raise ValueError("Cannot find or guess startx!")
+        return startx
+
+    def native_stopx(self, met_params):
+        if 'r_out' in met_params:
+            return np.array([0, np.log(met_params['r_out']), 1, 2*np.pi])
+        elif ('startx1' in met_params and 'dx1' in met_params and 'n1' in met_params and
+              'startx2' in met_params and 'dx2' in met_params and 'n2' in met_params and
+              'startx3' in met_params and 'dx3' in met_params and 'n3' in met_params):
+            return np.array([0, met_params['startx1'] + met_params['n1']*met_params['dx1'],
+                            met_params['startx2'] + met_params['n2']*met_params['dx2'],
+                            met_params['startx3'] + met_params['n3']*met_params['dx3']])
+        else:
+            raise ValueError("Cannot find or guess stopx!")
+
+
+    # smoothed integrated Heaviside Function
+    def psi_smooth(self, x):
+        if x < -1:
+            return 0.
+        elif x >= 1:
+            return x
+        else:
+            xout = (-35. * np.cos(0.5 * np.pi * x) - (5. / 6.) * np.cos(1.5 * np.pi * x) + 0.1 * np.cos(2.5 * np.pi * x)) / (32. * np.pi)
+            xout += 0.5 * (x + 1.)
+            return xout
+
+    # smoothed Heaviside Function
+    def theta_smooth(self, x):
+        if x < -1:
+            return 0.
+        elif x >= 1:
+            return 1.
+        else:
+            xout = 0.5 + (70. * np.sin(0.5 * np.pi * x) + 5. * np.sin(1.5 * np.pi * x) - np.sin(2.5 * np.pi * x))/128.
+            return xout
+
+    # smoothed minimum function
+    def minn(self, a, b, df):
+        delta = (b - a) / df
+        return b - psi_smooth(delta) * df
+
+    # smoothed maximum function
+    def maxx(self, a, b, df):
+        return -minn(-a, -b, df)
+
+    # jet vs disk fraction at a given x
+    def wjet(x2, fdisk, fjet):
+        # NOTE! fjet and fdisk must both be positive and sum to < 1. 
+        # NOTE! fjet is NOT defined as in Ressler 2017: their fjet = 1 - (our fjet)
+        delta = 2. * (np.abs(x2) - fdisk)/(1. - fjet - fdisk) - 1.
+        return theta_smooth(delta)
+    
+    # theta(x2, r) for the jet OR disk grid
+    def theta_disk_or_jet(self, r, x2, rdecoll, rcoll, runi, a1, a2):
+        r1 = minn(r, rdecoll, 0.5 * rdecoll) / runi
+        r2 = minn(r / (r1 * runi), rcoll / rdecoll, 0.5 * rcoll / rdecoll)
+        y = np.power(r2, a2) * tan(0.5 * x2 * np.pi)
+        x = np.power(r1, a1) # opposite sign convention for alpha1 from ressler 2017!
+        theta = 0.5 * np.pi + np.atan2(y, x)
+        return theta
+
+    # combine jet and disk theta grid 
+    def theta_diskjet(self, r, x2):
+        theta_disk = theta_disk_or_jet(r, x2, self.rdecoll_disk, self.rcoll_disk, self.runi, self.alpha1, self.alpha2)
+        theta_jet = theta_disk_or_jet(r, x2, self.rdecoll_jet, self.rcoll_jet, self.runi, self.alpha1, self.alpha2)
+        wfrac = wjet(x2, self.fdisk, self.fjet)
+        theta = wfrac * theta_jet + (1. - wfrac) * theta_disk
+        return theta
+
+    def to1stquad(self, x2):
+        ntimes = np.floor(0.25 * (x2 + 2.))
+        x2out = x2 - 4 * ntimes
+        if x2out > 0:
+            x2out = -x2out
+        if x2out < -1:
+            x2out = -2 - x2out
+        return x2out
+
+    def sinth0(self, r, x2):
+        thetaCYL = theta_diskjet(self.rcyl, self.x2cyl)
+        sinth0 = self.rcyl * np.sin(thetaCYL) / r
+        return sinth0
+
+    def sinth1(self, r, x2):
+        theta1 = theta_diskjet(self.rcyl, x2)
+        sinth1 = self.rcyl * np.sin(theta1) / r
+        return sinth1
+
+    def sinth2(self, r, x2):
+        theta = theta_diskjet(r, x2)
+        theta2 = theta_diskjet(r, self.x2cyl)
+
+        thetamid = 0.5 * np.pi
+  
+        thetaA = np.arcsin(sinth0(r, x2))
+        thetaB = (theta - theta2) * (thetamid - thetaA) / (thetamid - theta2)
+        sinth2 = np.sin(thetaA + thetaB)
+        return sinth2
+
+    def f2func(self, r, x2):
+        s1in = sinth1(r, x2)
+        s2in = sinth2(r, x2)
+  
+        s1ax = sinth1(r, MAXY)
+        s2ax = sinth2(r, MAXY)
+        df = np.abs(s2ax - s1ax) + 1.e-16
+
+        if r >= self.rcyl:
+            return maxx(s1in, s2in, df)
+        else:
+            return minn(s1in, s2in, df)
+
+    def cylindrify(self, r, x2):
+        thin = theta_diskjet(r, x2)
+  
+        x2mir = to1stquad(x2)
+        thmir = theta_diskjet(r, x2mir)
+
+        f1 = np.sin(thmir)
+        f2 = f2func(r, x2mir)
+
+        thmid = theta_diskjet(self.rmidcyl, x2mir)
+        f1mid = np.sin(thmid)
+        f2mid = f2func(self.rmidcyl, x2mir)
+        
+        df = f2mid - f1mid
+        
+        thout = np.arcsin(maxx(r * f1, r * f2, r * np.abs(df) + 1.e-16) / r)
+        if x2 != x2mir:
+            thout = thin + thmir - thout
+        
+        return thout
+
+    def r(self, x):
+        x1brk = np.log(self.rbrk - self.r0)
+        super_dist = np.where(x[1] > x1brk, x[1] - x1brk, 0.0)
+        return self.r0 + np.exp(x[1] + 4. * np.power(super_dist, 4.))
+
+    def th(self, x):
+        if self.cylindrify:
+            return cylindrify(r(x), x[2])
+        else:
+            return theta_diskjet(r(x), x[2])
+
+    def dxdX(self, x):
+        # TODO!!
+        alpha = self.smoothness / (x[1] + 0.5)
+        xprime = (x[2] - 0.5) / alpha
+        dxdX = np.zeros([4, 4, *x.shape[1:]])
+        dxdX[0, 0] = 1
+        dxdX[1, 1] = np.exp(x[1])
+        dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
+        dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
+                                    np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(0.5 / alpha), 2.)))
         dxdX[3, 3] = 1
         return dxdX
