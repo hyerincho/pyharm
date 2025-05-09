@@ -34,6 +34,7 @@ __license__ = """
 
 import h5py
 import numpy as np
+import pdb
 
 from .. import parameters
 from .interface import DumpFile
@@ -55,7 +56,7 @@ class KORALFile(DumpFile):
             else:
                 return None
 
-    def __init__(self, filename, ghost_zones=False):
+    def __init__(self, filename, ghost_zones=False, params=None):
         """Create a KORALFile object. Note that ghost_zones does NOTHING for now,
         as no available KORAL files include ghost zones.
         """

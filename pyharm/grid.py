@@ -43,6 +43,9 @@ from pyharm.coordinates import *
 def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
                    poly_xt=0.82, poly_alpha=14.0, mks_smooth=0.5, lin_frac=0.6, smoothness=0.03,
                    njet=8, kjet=8, pjet=2.,
+                   mksr0=0., rbrk=5000., cylindrify=1, rdecoll_disk=2.87178, rdecoll_jet=2.87178,
+                   rcoll_disk=28.7178, rcoll_jet=1000, runi=1.18460925, alpha1=1., alpha2=0.25,
+                   rcyl=30., ncyl=1., fdisk=0.4, fjet=0.3,
                    r_in=None, r_out=1000, caches=True, cache_conn=False):
     """Convenience function for generating grids with particular known parameters.
 
@@ -93,6 +96,24 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
             params['smoothness'] = smoothness
         if system == 'jks2':
             params['smoothness'] = smoothness
+        if system == 'jkscoords':
+            params['mksr0'] = mksr0
+            params['rbrk'] = rbrk
+            params['cylindrify'] = cylindrify
+            params['rdecoll_disk'] = rdecoll_disk
+            params['rdecoll_jet'] = rdecoll_jet
+            params['rcoll_disk'] = rcoll_disk
+            params['rcoll_jet'] = rcoll_jet
+            params['runi'] = runi
+            params['alpha1'] = alpha1
+            params['alpha2'] = alpha2
+            params['rcyl'] = rcyl
+            params['ncyl'] = ncyl
+            params['fdisk'] = fdisk
+            params['fjet'] = fjet
+            params['x2min'] = -0.99999
+            params['x2cyl'] = params['x2min'] + 0.5 * ncyl / n2
+            params['rmidcyl'] = 0.5 * (rcyl + r_in)
 
     return Grid(params, caches=caches, cache_conn=cache_conn)
 
@@ -222,6 +243,8 @@ class Grid:
             self.coords = JKS(params)
         elif params['coordinates'] == "jks2":
             self.coords = JKS2(params)
+        elif params['coordinates'] == "jetcoords":
+            self.coords = JKSKoral(params)
         else:
             raise ValueError("metric is {}!! must be minkowski, mks, mmks, or fmks".format(params['coordinates']))
 

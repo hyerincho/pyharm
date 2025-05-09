@@ -35,6 +35,7 @@ __license__ = """
 import numpy as np
 import configparser
 import re
+import pdb
 
 __doc__ = \
 """Parse and handle parameters.
@@ -144,8 +145,10 @@ def parse_parthenon_dat(string):
         params['coordinates'] = "seks"
     elif "wks" in params['transform']:
         params['coordinates'] = "wks"
-    elif "jks" in params['transform']:
+    elif "jks" == params['transform']:
         params['coordinates'] = "jks"
+    elif "jks2" == params['transform']:
+        params['coordinates'] = "jks2"
     elif "null" in params['transform'] and "ks" in params['base']:
         params['coordinates'] = "ks"
     elif "null" in params['transform'] and "bl" in params['base']:
@@ -176,8 +179,9 @@ def fix(params):
     if (not 'r_out' in params) and 'Rout' in params:
         params['r_out'] = params['Rout']
 
-    params['electrons'] = to_number(params['config']['electrons']['on'])
-    params['emhd'] = to_number(params['config']['emhd']['on'])
+    if 'config' in params:
+        params['electrons'] = to_number(params['config']['electrons']['on'])
+        params['emhd'] = to_number(params['config']['emhd']['on'])
 
     if not ('prim_names' in params):
         if 'electrons' in params and params['electrons']:
@@ -187,11 +191,12 @@ def fix(params):
             params['electrons'] = False
             params['prim_names'] = ["RHO", "UU", "U1", "U2", "U3", "B1", "B2", "B3"]
 
-        if params['emhd']:
-            if to_number(params['config']['emhd']['conduction']):
-                params['prim_names'].append("Q_TILDE")
-            if to_number(params['config']['emhd']['viscosity']):
-                params['prim_names'].append("DP_TILDE")
+        if 'emhd' in params:
+            if params['emhd']:
+                if to_number(params['config']['emhd']['conduction']):
+                    params['prim_names'].append("Q_TILDE")
+                if to_number(params['config']['emhd']['viscosity']):
+                    params['prim_names'].append("DP_TILDE")
 
     if 'n_prim' not in params:
         if 'n_prims' in params: # This got messed up *often*
@@ -241,7 +246,7 @@ def fix(params):
 
     # These replacements are for early KHARMA anyway, before SuperExp coords
     # We record these now
-    if params['coordinates'] != "superexp":
+    if params['coordinates'] != "superexp" and params['coordinates'] != 'jetcoords':
         if 'x1min' not in params:
             params['x1min'] = np.log(params['r_in'])
         if 'x1max' not in params:
@@ -253,6 +258,12 @@ def fix(params):
             params['x2max'] = 1.0
         else:
             params['x2max'] = np.pi
+    
+    if 'x1max' not in params:
+        if 'dx1' in params:
+            params['x1max'] = params['x1min'] + params['n1'] * params['dx1']
+            params['x2max'] = params['x2min'] + params['n2'] * params['dx2']
+            params['x3max'] = params['x3min'] + params['n3'] * params['dx3']
 
     if 'x3min' not in params:
         params['x3min'] = 0.

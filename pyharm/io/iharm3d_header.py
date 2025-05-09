@@ -34,6 +34,7 @@ __license__ = """
 
 import numpy as np
 import h5py, sys
+import pdb
 
 from ..grid import Grid
 from .. import parameters
@@ -68,7 +69,9 @@ defaults = {'n_prims_passive': 0, 'version': "pyharm-writer-0", 'gridfile': 'non
 # Translations of things the rest of pyharm tolerates/understands as elements of 'params', but which are not
 # conformant for headers and should be written with an alternate name.
 translations = {'n1': 'n1tot', 'n2': 'n2tot', 'n3': 'n3tot',
-                'metric': 'coordinates', 'metric_run': 'coordinates'}
+                'metric': 'coordinates', 'metric_run': 'coordinates', 
+                'bhspin': 'a', 'rmin': 'r_in', 'rmax': 'r_out', 
+                'startx1': 'x1min', 'startx2': 'x2min', 'startx3': 'x3min'}
 
 def write_hdr(params, outf):
     """Write a valid iharm3d/Illinois HDF header"""
@@ -193,10 +196,8 @@ def read_hdr(grp):
                 params[header_key] = params[params_key].lower()
             else:
                 params[header_key] = params[params_key]
-
     if close_file:
         fil.close()
-
     return parameters.fix(params)
 
 
