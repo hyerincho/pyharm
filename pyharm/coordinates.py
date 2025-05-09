@@ -1166,10 +1166,12 @@ class JKSKoral(KS):
         self.alpha2 = met_params['alpha2']
         self.rcyl = met_params['rcyl']
         self.ncyl = met_params['ncyl']
-        self.x2cyl = met_params['startx2'] + 0.5 * self.ncyl / met_params['n2tot']
-        self.rmidcyl = 0.5 * (self.rcyl + met_params['r_in'])
         self.fdisk = met_params['fdisk']
         self.fjet = met_params['fjet']
+        self.x2cyl = met_params['startx2'] + 0.5 * self.ncyl / met_params['n2tot']
+        self.rmidcyl = 0.5 * (self.rcyl + met_params['r_in'])
+        self.maxy = met_params['startx2'] + met_params['n2tot'] * met_params['dx2']
+        self.r_out = met_params['r_out']
 
         super(JKSKoral, self).__init__(met_params)
 
@@ -1210,132 +1212,165 @@ class JKSKoral(KS):
 
     # smoothed integrated Heaviside Function
     def psi_smooth(self, x):
-        if x < -1:
-            return 0.
-        elif x >= 1:
-            return x
+        xout = (-35. * np.cos(0.5 * np.pi * x) - (5. / 6.) * np.cos(1.5 * np.pi * x) + 0.1 * np.cos(2.5 * np.pi * x)) / (32. * np.pi)
+        xout += 0.5 * (x + 1.)
+        if isinstance(x, np.ndarray):
+            xout[np.where(x<-1)] = 0.
+            xout[np.where(x>=1)] = x[np.where(x>=1)]
         else:
-            xout = (-35. * np.cos(0.5 * np.pi * x) - (5. / 6.) * np.cos(1.5 * np.pi * x) + 0.1 * np.cos(2.5 * np.pi * x)) / (32. * np.pi)
-            xout += 0.5 * (x + 1.)
-            return xout
+            if x < -1: xout = 0.
+            elif x >= 1: xout = x
+        return xout
 
     # smoothed Heaviside Function
     def theta_smooth(self, x):
-        if x < -1:
-            return 0.
-        elif x >= 1:
-            return 1.
+        xout = 0.5 + (70. * np.sin(0.5 * np.pi * x) + 5. * np.sin(1.5 * np.pi * x) - np.sin(2.5 * np.pi * x))/128.
+        if isinstance(x, np.ndarray):
+            xout[np.where(x<-1)] = 0.
+            xout[np.where(x>=1)] = 1.
         else:
-            xout = 0.5 + (70. * np.sin(0.5 * np.pi * x) + 5. * np.sin(1.5 * np.pi * x) - np.sin(2.5 * np.pi * x))/128.
-            return xout
+            if x < -1: xout = 0.
+            elif x >= 1: xout = 1.
+        return xout
 
     # smoothed minimum function
     def minn(self, a, b, df):
         delta = (b - a) / df
-        return b - psi_smooth(delta) * df
+        return b - self.psi_smooth(delta) * df
 
     # smoothed maximum function
     def maxx(self, a, b, df):
-        return -minn(-a, -b, df)
+        return -self.minn(-a, -b, df)
 
     # jet vs disk fraction at a given x
-    def wjet(x2, fdisk, fjet):
+    def wjet(self, x2, fdisk, fjet):
         # NOTE! fjet and fdisk must both be positive and sum to < 1. 
         # NOTE! fjet is NOT defined as in Ressler 2017: their fjet = 1 - (our fjet)
         delta = 2. * (np.abs(x2) - fdisk)/(1. - fjet - fdisk) - 1.
-        return theta_smooth(delta)
+        return self.theta_smooth(delta)
     
     # theta(x2, r) for the jet OR disk grid
     def theta_disk_or_jet(self, r, x2, rdecoll, rcoll, runi, a1, a2):
-        r1 = minn(r, rdecoll, 0.5 * rdecoll) / runi
-        r2 = minn(r / (r1 * runi), rcoll / rdecoll, 0.5 * rcoll / rdecoll)
-        y = np.power(r2, a2) * tan(0.5 * x2 * np.pi)
+        r1 = self.minn(r, rdecoll, 0.5 * rdecoll) / runi
+        r2 = self.minn(r / (r1 * runi), rcoll / rdecoll, 0.5 * rcoll / rdecoll)
+        y = np.power(r2, a2) * np.tan(0.5 * x2 * np.pi)
         x = np.power(r1, a1) # opposite sign convention for alpha1 from ressler 2017!
-        theta = 0.5 * np.pi + np.atan2(y, x)
+        theta = 0.5 * np.pi + np.arctan2(y, x)
         return theta
 
     # combine jet and disk theta grid 
     def theta_diskjet(self, r, x2):
-        theta_disk = theta_disk_or_jet(r, x2, self.rdecoll_disk, self.rcoll_disk, self.runi, self.alpha1, self.alpha2)
-        theta_jet = theta_disk_or_jet(r, x2, self.rdecoll_jet, self.rcoll_jet, self.runi, self.alpha1, self.alpha2)
-        wfrac = wjet(x2, self.fdisk, self.fjet)
+        theta_disk = self.theta_disk_or_jet(r, x2, self.rdecoll_disk, self.rcoll_disk, self.runi, self.alpha1, self.alpha2)
+        theta_jet = self.theta_disk_or_jet(r, x2, self.rdecoll_jet, self.rcoll_jet, self.runi, self.alpha1, self.alpha2)
+        wfrac = self.wjet(x2, self.fdisk, self.fjet)
         theta = wfrac * theta_jet + (1. - wfrac) * theta_disk
         return theta
 
     def to1stquad(self, x2):
         ntimes = np.floor(0.25 * (x2 + 2.))
         x2out = x2 - 4 * ntimes
-        if x2out > 0:
-            x2out = -x2out
-        if x2out < -1:
-            x2out = -2 - x2out
+        if isinstance(x2, np.ndarray):
+            x2out[np.where(x2out>0)] *= -1
+            itemp = np.where(x2out<-1)
+            x2out[itemp] *= -1
+            x2out[itemp] -= 2
+        else:
+            if x2out > 0:
+                x2out = -x2out
+            if x2out < -1:
+                x2out = -2 - x2out
         return x2out
 
     def sinth0(self, r, x2):
-        thetaCYL = theta_diskjet(self.rcyl, self.x2cyl)
+        thetaCYL = self.theta_diskjet(self.rcyl, self.x2cyl)
         sinth0 = self.rcyl * np.sin(thetaCYL) / r
         return sinth0
 
     def sinth1(self, r, x2):
-        theta1 = theta_diskjet(self.rcyl, x2)
+        theta1 = self.theta_diskjet(self.rcyl, x2)
         sinth1 = self.rcyl * np.sin(theta1) / r
         return sinth1
 
     def sinth2(self, r, x2):
-        theta = theta_diskjet(r, x2)
-        theta2 = theta_diskjet(r, self.x2cyl)
+        theta = self.theta_diskjet(r, x2)
+        theta2 = self.theta_diskjet(r, self.x2cyl)
 
         thetamid = 0.5 * np.pi
   
-        thetaA = np.arcsin(sinth0(r, x2))
+        thetaA = np.arcsin(self.sinth0(r, x2))
         thetaB = (theta - theta2) * (thetamid - thetaA) / (thetamid - theta2)
         sinth2 = np.sin(thetaA + thetaB)
         return sinth2
 
     def f2func(self, r, x2):
-        s1in = sinth1(r, x2)
-        s2in = sinth2(r, x2)
+        s1in = self.sinth1(r, x2)
+        s2in = self.sinth2(r, x2)
   
-        s1ax = sinth1(r, MAXY)
-        s2ax = sinth2(r, MAXY)
+        s1ax = self.sinth1(r, self.maxy)
+        s2ax = self.sinth2(r, self.maxy)
         df = np.abs(s2ax - s1ax) + 1.e-16
-
-        if r >= self.rcyl:
-            return maxx(s1in, s2in, df)
+        
+        if isinstance(r, np.ndarray):
+            out = self.maxx(s1in, s2in, df)
+            itemp = np.where(r < self.rcyl)
+            out[itemp] = self.minn(s1in, s2in, df)[itemp]
+            return out
         else:
-            return minn(s1in, s2in, df)
+            if r >= self.rcyl:
+                return self.maxx(s1in, s2in, df)
+            else:
+                return self.minn(s1in, s2in, df)
 
-    def cylindrify(self, r, x2):
-        thin = theta_diskjet(r, x2)
+    def fcylindrify(self, r, x2):
+        thin = self.theta_diskjet(r, x2)
   
-        x2mir = to1stquad(x2)
-        thmir = theta_diskjet(r, x2mir)
+        x2mir = self.to1stquad(x2)
+        thmir = self.theta_diskjet(r, x2mir)
 
         f1 = np.sin(thmir)
-        f2 = f2func(r, x2mir)
+        f2 = self.f2func(r, x2mir)
 
-        thmid = theta_diskjet(self.rmidcyl, x2mir)
+        thmid = self.theta_diskjet(self.rmidcyl, x2mir)
         f1mid = np.sin(thmid)
-        f2mid = f2func(self.rmidcyl, x2mir)
+        f2mid = self.f2func(self.rmidcyl, x2mir)
         
         df = f2mid - f1mid
         
-        thout = np.arcsin(maxx(r * f1, r * f2, r * np.abs(df) + 1.e-16) / r)
-        if x2 != x2mir:
-            thout = thin + thmir - thout
+        thout = np.arcsin(self.maxx(r * f1, r * f2, r * np.abs(df) + 1.e-16) / r)
+        if isinstance(x2, np.ndarray):
+            itemp = np.where(x2!=x2mir)
+            thout[itemp] = (thin + thmir - thout)[itemp]
+        else:
+            if x2 != x2mir:
+                thout = thin + thmir - thout
         
         return thout
 
-    def r(self, x):
+    def hyperexp_func(self, x1):
         x1brk = np.log(self.rbrk - self.r0)
-        super_dist = np.where(x[1] > x1brk, x[1] - x1brk, 0.0)
-        return self.r0 + np.exp(x[1] + 4. * np.power(super_dist, 4.))
+        return self.r0 + np.exp(x1 + 4. * np.power(x1 - x1brk, 4.))
+    
+    def hyperexp_func_root(self, x1, r):
+        x1brk = np.log(self.rbrk - self.r0)
+        return np.log(r - self.r0) - (x1 + 4. * np.power(x1 - x1brk, 4.))
+
+    def hyperexp_func_inv(self, r):
+        root = opt.newton(self.hyperexp_func_root, np.log(r - self.r0), args=(r,))
+        return root
+
+    def r(self, x):
+        x1in = np.log(1. - self.r0)
+        x1brk = np.log(self.rbrk - self.r0)
+        x1out = self.hyperexp_func_inv(self.r_out)
+        x1sc = x1in + x[1] * (x1out - x1in)
+        super_dist = np.where(x1sc > x1brk, x1sc - x1brk, 0.0)
+        return self.r0 + np.exp(x1sc + 4. * np.power(super_dist, 4.))
 
     def th(self, x):
         if self.cylindrify:
-            return cylindrify(r(x), x[2])
+            return self.fcylindrify(self.r(x), x[2])
         else:
-            return theta_diskjet(r(x), x[2])
+            return self.theta_diskjet(self.r(x), x[2])
 
     def dxdX(self, x):
         # TODO!!

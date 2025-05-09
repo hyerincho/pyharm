@@ -74,7 +74,7 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
         params['x1max'] = 1
         params['x2max'] = 1
         params['x3max'] = 1
-    elif 'ks' in system:
+    elif 'ks' in system or system == 'jetcoords':
         params['a'] = a
         params['ext_g'] = ext_g
         params['r_out'] = r_out
@@ -96,7 +96,7 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
             params['smoothness'] = smoothness
         if system == 'jks2':
             params['smoothness'] = smoothness
-        if system == 'jkscoords':
+        if system == 'jetcoords':
             params['mksr0'] = mksr0
             params['rbrk'] = rbrk
             params['cylindrify'] = cylindrify
@@ -111,8 +111,13 @@ def make_some_grid(system, n1=128, n2=128, n3=128, a=0, ext_g=False, hslope=0.3,
             params['ncyl'] = ncyl
             params['fdisk'] = fdisk
             params['fjet'] = fjet
-            params['x2min'] = -0.99999
-            params['x2cyl'] = params['x2min'] + 0.5 * ncyl / n2
+            params['startx1'] = 0.
+            params['startx2'] = -0.99999
+            params['startx3'] = -3.141592653589793
+            params['dx1'] = 1. / n1
+            params['dx2'] = 2. * abs(params['startx2']) / n2
+            params['dx3'] = 2. * abs(params['startx3']) / n3
+            params['x2cyl'] = params['startx2'] + 0.5 * ncyl / n2
             params['rmidcyl'] = 0.5 * (rcyl + r_in)
 
     return Grid(params, caches=caches, cache_conn=cache_conn)
