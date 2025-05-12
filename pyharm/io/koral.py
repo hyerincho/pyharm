@@ -52,7 +52,7 @@ class KORALFile(DumpFile):
         """
         with h5py.File(fname, 'r') as dfile:
             if 't' in dfile.keys():
-                return dfile.attrs['t']
+                return dfile['t'][()]
             else:
                 return None
 
@@ -73,7 +73,7 @@ class KORALFile(DumpFile):
         params = read_hdr(self.file['/header'])
         return parameters.fix(params)
 
-    def read_dump(self, var, **kwargs):
+    def read_var(self, var, slc=(), **kwargs):
         """Read the header and primitives from a write_dump.
         No analysis or extra processing is performed
         @return P, params
@@ -83,13 +83,14 @@ class KORALFile(DumpFile):
                 var = pair[1]
         return self._prep_array(self.file['/quants/'+var][()], **kwargs)
 
-    def _prep_array(arr, as_double=False, zones_first=False, add_ghosts=False):
+    def _prep_array(self, arr, astype=None, zones_first=False, add_ghosts=False):
+
         """Re-order and optionally up-convert an array from a file,
         to put it in usual pyharm order/format
         """
         # Upconvert to doubles if necessary
         # TODO could add other types?  Not really necessary yet
-        if as_double:
-            arr = arr.astype(np.float64)
+        if astype is not None:
+            arr = arr.astype(astype)
         
         return arr

@@ -107,7 +107,7 @@ def flatten_xy(dump, var, at=None, sum=False, j_slice=None):
         if at is None:
             at = dump['n2']//2
         if isinstance(var, str):
-            return np.squeeze(dump[:, at, :][var])
+            return np.squeeze(dump[var][:, at, :])
         else:
             return var[:, at, :]
 
