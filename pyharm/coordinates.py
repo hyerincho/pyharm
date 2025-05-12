@@ -51,6 +51,7 @@ default_met_params = {'a': 0.9375, 'hslope': 0.3, 'r_out': 50.0, 'n1tot': 192,
 
 legacy_small_th = True
 
+
 class CoordinateSystem(object):
     """ Interface for representing coordinate systems.  Each system implements these functions.
     Each system is designed to return at least:
@@ -285,6 +286,30 @@ class CoordinateSystem(object):
         return np.einsum("...ij->ij...", la.inv(np.einsum("ij...->...ij", self.dxdX_cart(x))))
     def dXdx_bl(self, x):
         return np.einsum("...ij->ij...", la.inv(np.einsum("ij...->...ij", self.dxdX_bl(x))))
+    
+    # dxdX numerically
+    def dxdX_arb(x):
+        delta = 1.e-5
+
+        dxdX = np.zeros([4, 4, *x.shape[1:]])
+        xlinL = np.copy(x)
+        xlinH = np.copy(x)
+        
+        for j in range(4):
+            for k in range(4):
+                xlinL[k] = x[k]
+                xlinH[k] = x[k]
+
+            xinL[j] -= delta
+            xinH[j] += delta
+
+            xoutL = self.ks_coord(xinL)
+            xoutH = self.ks_coord(xinH)
+
+            or i in range(4):
+                dxdX[i][j] = (xoutH[i]-xoutL[i])/(xinH[j]-xinL[j])
+
+        return dxdX
 
 class Minkowski(CoordinateSystem):
     @classmethod
@@ -371,7 +396,9 @@ class KS(CoordinateSystem):
     def __init__(self, met_params={'a': 0.9375, 'ext_g': False}):
         self.a = met_params['a']
         self.small_th = 1.e-20
-        self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
+        if 'ext_g' in met_params:
+            self.ext_g = (met_params['ext_g']=='true' or met_params['ext_g']==True)
+        else: self.ext_g = False
         if self.ext_g:
             self.ext_g_A = 4.24621057e-9 #1.46797639e-8
             self.ext_g_B = 1.35721335 #1.29411117
