@@ -288,25 +288,25 @@ class CoordinateSystem(object):
         return np.einsum("...ij->ij...", la.inv(np.einsum("ij...->...ij", self.dxdX_bl(x))))
     
     # dxdX numerically
-    def dxdX_arb(x):
+    def dxdX_arb(self, x):
         delta = 1.e-5
 
         dxdX = np.zeros([4, 4, *x.shape[1:]])
-        xlinL = np.copy(x)
-        xlinH = np.copy(x)
+        xinL = np.copy(x)
+        xinH = np.copy(x)
         
         for j in range(4):
             for k in range(4):
-                xlinL[k] = x[k]
-                xlinH[k] = x[k]
+                xinL[k] = x[k]
+                xinH[k] = x[k]
 
             xinL[j] -= delta
             xinH[j] += delta
 
-            xoutL = self.ks_coord(xinL)
-            xoutH = self.ks_coord(xinH)
+            xoutL = self.ks_coord(xinL, True)
+            xoutH = self.ks_coord(xinH, True)
 
-            or i in range(4):
+            for i in range(4):
                 dxdX[i][j] = (xoutH[i]-xoutL[i])/(xinH[j]-xinL[j])
 
         return dxdX
@@ -1164,15 +1164,16 @@ class JKS2(KS):
         return self.correct_small_th(th_out)
 
     def dxdX(self, x):
-        alpha = self.smoothness / (x[1] + 0.5)
-        xprime = (x[2] - 0.5) / alpha
-        dxdX = np.zeros([4, 4, *x.shape[1:]])
-        dxdX[0, 0] = 1
-        dxdX[1, 1] = np.exp(x[1])
-        dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
-        dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
-                                    np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(0.5 / alpha), 2.)))
-        dxdX[3, 3] = 1
+        #alpha = self.smoothness / (x[1] + 0.5)
+        #xprime = (x[2] - 0.5) / alpha
+        #dxdX = np.zeros([4, 4, *x.shape[1:]])
+        #dxdX[0, 0] = 1
+        #dxdX[1, 1] = np.exp(x[1])
+        #dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
+        #dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
+        #                            np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(0.5 / alpha), 2.)))
+        #dxdX[3, 3] = 1
+        dxdX = self.dxdX_arb(x)
         return dxdX
 
 class JKSKoral(KS):
