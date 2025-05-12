@@ -1164,16 +1164,15 @@ class JKS2(KS):
         return self.correct_small_th(th_out)
 
     def dxdX(self, x):
-        #alpha = self.smoothness / (x[1] + 0.5)
-        #xprime = (x[2] - 0.5) / alpha
-        #dxdX = np.zeros([4, 4, *x.shape[1:]])
-        #dxdX[0, 0] = 1
-        #dxdX[1, 1] = np.exp(x[1])
-        #dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
-        #dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
-        #                            np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(0.5 / alpha), 2.)))
-        #dxdX[3, 3] = 1
-        dxdX = self.dxdX_arb(x)
+        alpha = self.smoothness / (x[1] + 0.5)
+        xprime = (x[2] - 0.5) / alpha
+        dxdX = np.zeros([4, 4, *x.shape[1:]])
+        dxdX[0, 0] = 1
+        dxdX[1, 1] = np.exp(x[1])
+        dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
+        dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
+                                    np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(0.5 / alpha), 2.)))
+        dxdX[3, 3] = 1
         return dxdX
 
 class JKSKoral(KS):
@@ -1401,14 +1400,5 @@ class JKSKoral(KS):
             return self.theta_diskjet(self.r(x), x[2])
 
     def dxdX(self, x):
-        # TODO!!
-        alpha = self.smoothness / (x[1] + 0.5)
-        xprime = (x[2] - 0.5) / alpha
-        dxdX = np.zeros([4, 4, *x.shape[1:]])
-        dxdX[0, 0] = 1
-        dxdX[1, 1] = np.exp(x[1])
-        dxdX[2, 2] = np.pi / (2. * np.power(np.cosh(xprime), 2.) * alpha * np.tanh(0.5 / alpha))
-        dxdX[2, 1] = np.pi / 2. * ((x[2] - 0.5) / (self.smoothness * np.power(np.cosh(xprime), 2.) * np.tanh(0.5 / alpha)) - 
-                                    np.tanh(xprime) * 0.5 / (self.smoothness * np.power(np.sinh(0.5 / alpha), 2.)))
-        dxdX[3, 3] = 1
+        dxdX = self.dxdX_arb(x)
         return dxdX
