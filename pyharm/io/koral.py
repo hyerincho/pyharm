@@ -78,10 +78,13 @@ class KORALFile(DumpFile):
         No analysis or extra processing is performed
         @return P, params
         """
-        for pair in (('RHO','rho'), ('UU','uint')):
-            if var == pair[0]:
-                var = pair[1]
-        return self._prep_array(self.file['/quants/'+var][()], **kwargs)
+        if var == 'uvec':
+            return np.stack((self.read_var('U1', (), **kwargs), self.read_var('U2', (), **kwargs), self.read_var('U3', (), **kwargs)))
+        else:
+            for pair in (('RHO','rho'), ('UU','uint')):
+                if var == pair[0]:
+                    var = pair[1]
+            return self._prep_array(self.file['/quants/'+var][()], **kwargs)
 
     def _prep_array(self, arr, astype=None, zones_first=False, add_ghosts=False):
 
