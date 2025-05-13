@@ -309,6 +309,8 @@ class CoordinateSystem(object):
             for i in range(4):
                 dxdX[i][j] = (xoutH[i]-xoutL[i])/(xinH[j]-xinL[j])
 
+
+        dxdX[0, 0] = 1
         return dxdX
 
 class Minkowski(CoordinateSystem):
