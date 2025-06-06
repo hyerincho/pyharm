@@ -164,7 +164,7 @@ def overlay_blocks_xy(ax, dump, native=False, color='k', linewidth=0.2, log_r=Fa
 def overlay_field(ax, dump, **kwargs):
         overlay_flowlines(ax, dump, 'B1', 'B2', **kwargs)
 
-def overlay_flowlines(ax, dump, varx1, varx2, levels=None, nlines=20, color='k', native=False, half_cut=False, reverse=False, log_r=False, **kwargs):
+def overlay_flowlines(ax, dump, varx1, varx2, levels=None, nlines=20, color='k', native=False, half_cut=False, reverse=False, log_r=False, i_slice=slice(None), **kwargs):
     """Overlay the "flow lines" of a pair of variables in X1 and X2 directions.  Sums assuming no divergence to obtain a
     potential, then plots contours of the potential so as to total 'nlines' total contours.
     """
@@ -173,8 +173,9 @@ def overlay_flowlines(ax, dump, varx1, varx2, levels=None, nlines=20, color='k',
         half_cut = True
 
     x, z = dump.grid.get_xz_locations(native=native, half_cut=half_cut, log_r=log_r)
-    varx1 = flatten_xz(dump, varx1, sum=True, half_cut=True) / dump['n3'] * np.squeeze(dump['gdet'])
-    varx2 = flatten_xz(dump, varx2, sum=True, half_cut=True) / dump['n3'] * np.squeeze(dump['gdet'])
+    x = x[i_slice]; z = z[i_slice]
+    varx1 = flatten_xz(dump, varx1, sum=True, half_cut=True, i_slice=i_slice) / dump['n3'] * np.squeeze(dump['gdet'][i_slice])
+    varx2 = flatten_xz(dump, varx2, sum=True, half_cut=True, i_slice=i_slice) / dump['n3'] * np.squeeze(dump['gdet'][i_slice])
 
     if native:
         varx1 = varx1.T

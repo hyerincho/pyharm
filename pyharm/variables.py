@@ -46,6 +46,7 @@ from .defs import Loci
 from .grmhd.b_field import *
 
 import matplotlib.pyplot as plt
+import pdb
 
 # Define a dict of names, coupled with the functions required to obtain their variables.
 # That way, we only need to specify lists and final operations in eht_analysis,
@@ -57,10 +58,10 @@ fns_dict = {# 4-vectors
             'bcov': lambda dump: dump.grid.lower_grid(dump['bcon']),
             # Versions in base coordinates
             # these use the reverse of dxdX/dXdx as they transform *back*
-            'ucon_base': lambda dump: np.einsum("i...,ij...->j...", dump["ucon"], dump['dxdX']),
-            'ucov_base': lambda dump: np.einsum("i...,ij...->j...", dump["ucov"], dump['dXdx']),
-            'bcon_base': lambda dump: np.einsum("i...,ij...->j...", dump["bcon"], dump['dxdX']),
-            'bcov_base': lambda dump: np.einsum("i...,ij...->j...", dump["bcov"], dump['dXdx']),
+            'ucon_base': lambda dump: np.einsum("i...,ji...->j...", dump["ucon"], dump['dxdX']),
+            'ucov_base': lambda dump: np.einsum("i...,ji...->j...", dump["ucov"], dump['dXdx']),
+            'bcon_base': lambda dump: np.einsum("i...,ji...->j...", dump["bcon"], dump['dxdX']),
+            'bcov_base': lambda dump: np.einsum("i...,ji...->j...", dump["bcov"], dump['dXdx']),
             # Versions in Cartesian
             'ucon_cart': lambda dump: np.einsum("i...,ij...->j...", dump["ucon_base"], dump['dxdX_cart']),
             'ucov_cart': lambda dump: np.einsum("i...,ij...->j...", dump["ucov_base"], dump['dXdx_cart']),
@@ -92,6 +93,8 @@ fns_dict = {# 4-vectors
             'cs': lambda dump: np.sqrt(dump['gam'] * dump['Pg'] / (dump['RHO'] + dump['gam'] * dump['UU'])),
             'vA': lambda dump: alfven_speed(dump),
             'Omega': lambda dump: dump["u^phi"] / dump["u^t"] ,
+            'OmegaF': lambda dump: dump["F_0_1"] / dump["F_1_3"] ,
+            'omegaF': lambda dump: dump["OmegaF"] * 2. * dump["r_eh"] / dump["a"],
             # TODO magnetosonic, EMHD speed, effective timestep
             # Fluxes in radial direction: Mass, Energy, Angular Momentum
             'FM': lambda dump: dump['RHO'] * dump['ucon'][1],
@@ -155,7 +158,10 @@ fns_dict = {# 4-vectors
             # Electric fields
             'E1': lambda dump: F_con(dump, 1, 0),
             'E2': lambda dump: F_con(dump, 2, 0),
-            'E3': lambda dump: F_con(dump, 3, 0)
+            'E3': lambda dump: F_con(dump, 3, 0),
+            'B1r2': lambda dump: dump["B1"] * np.power(dump["r"], 2.),
+            'B2r2': lambda dump: dump["B2"] * np.power(dump["r"], 2.),
+            'B3r2': lambda dump: dump["B3"] * np.power(dump["r"], 2.),
             }
 
 ## Physics functions ##

@@ -54,7 +54,7 @@ Certain zone arguments with defaults are still necessary when a reduction is oth
 
 ## Plotting reductions ##
 
-def flatten_xz(dump, var, at=None, sum=False, half_cut=False):
+def flatten_xz(dump, var, at=None, sum=False, half_cut=False, i_slice=slice(None)):
     """Return an X-Z slice or sum of var, generally for use in making a plot.
     By default takes both the 0-degree (right side) and 180-degree (left side) slices,
     to make a full slice across the pole.
@@ -67,6 +67,8 @@ def flatten_xz(dump, var, at=None, sum=False, half_cut=False):
     if sum:
         if isinstance(var, str):
             var = dump[var]
+        if i_slice is not None:
+            var = var[i_slice,:,:]
         if len(var.shape) == 3:
             if np.isnan(var).any(): var = np.nansum(var, axis=-1)
             else: var = var.sum(-1)
@@ -79,17 +81,17 @@ def flatten_xz(dump, var, at=None, sum=False, half_cut=False):
             at = 0
         if isinstance(var, str):
             if half_cut:
-                return np.squeeze(dump[var][:, :, at])
+                return np.squeeze(dump[var][i_slice, :, at])
             else:
-                return np.append(np.squeeze(dump[var][:, :, at]), np.flip(np.squeeze(dump[var][:, :, at + dump['n3']//2]), 1), 1)
+                return np.append(np.squeeze(dump[var][i_slice, :, at]), np.flip(np.squeeze(dump[var][i_slice, :, at + dump['n3']//2]), 1), 1)
         else:
             if half_cut:
                 if len(var.shape) == 3:
-                    return var[:, :, at]
+                    return var[i_slice, :, at]
                 else:
-                    return var
+                    return var[i_slice]
             else:
-                return np.append(var[:, :, at], np.flip(var[:, :, at + dump['n3']//2], 1), 1)
+                return np.append(var[i_slice, :, at], np.flip(var[i_slice, :, at + dump['n3']//2], 1), 1)
 
 def flatten_xy(dump, var, at=None, sum=False, j_slice=None):
     """Return an X-Y slice or sum of var.  Note sums are *not* GR-aware!

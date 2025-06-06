@@ -36,6 +36,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import numpy as np
+import pdb
 
 from ..ana.reductions import flatten_xy, flatten_xz, wrap, get_j_bounds
 from ..util import i_of
@@ -145,6 +146,8 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
             var = dump["Be_b"]/uff**2
         elif "u^phi_over_uK" in var:
             var = dump["u^phi"]/uK
+        elif "u^th_over_uK" in var:
+            var = dump["u^th"]/uK
         elif "vA_over_u^r" in var:
             #var = dump["vA"]/(dump["u^1"]/dump["u^0"])
             var = dump["vA"]/(dump["u^r"])
@@ -162,7 +165,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
         var = wrap(var)
 
     # Use symlog only when we need it
-    if symlog or (log and np.any(var < 0.0)):
+    if symlog: # or (log and np.any(var < 0.0)):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         if 'linthresh' in kwargs:
@@ -208,6 +211,7 @@ def plot_xz(ax, dump, var, vmin=None, vmax=None, window=False,
             active_rout = dump["Params"]["Multizone/active_rout"]
             ax.axvline(np.log(active_rin), color='k')
             ax.axvline(np.log(active_rout), color='k')
+        ax.axvline(np.log(dump["r_eh"]), color='k')
     elif log_r:
         if xlabel: ax.set_xlabel(r"$x$ ($r \rightarrow \ln(r)$)")
         if ylabel: ax.set_ylabel(r"$z$ ($r \rightarrow \ln(r)$)")
@@ -288,6 +292,8 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
             var = dump["Be_b"]/uff**2
         elif "u^phi_over_uK" in var:
             var = dump["u^phi"]/uK
+        elif "u^th_over_uK" in var:
+            var = dump["u^th"]/uK
         elif "vA_over_u^r" in var:
             #var = dump["vA"]/(dump["u^1"]/dump["u^0"])
             var = dump["vA"]/(dump["u^r"])
@@ -311,7 +317,7 @@ def plot_xy(ax, dump, var, vmin=None, vmax=None, window=None,
         var = wrap(var)
 
     # Use symlog only when we need it
-    if symlog or (log and np.any(var < 0.0)):
+    if symlog: # or (log and np.any(var < 0.0)):
         if cmap == 'jet':
             cmap = 'RdBu_r'
         mesh = pcolormesh_symlog(ax, x, y, var, cmap=cmap, vmin=vmin, vmax=vmax,
