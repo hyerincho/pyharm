@@ -319,6 +319,12 @@ def frame(fname, diag, kwargs):
         if "electric_field" in movie_type:
             kwargs['fig_x'] = 18
             kwargs['fig_y'] = 6
+        if "multiscale" in movie_type and movie_type!= "multiscale_Trho":
+            kwargs['fig_x'] = 8
+            kwargs['fig_y'] = 6
+        if movie_type == "multiscale_Trho":
+            kwargs['fig_x'] = 36
+            kwargs['fig_y'] = 12
         fig = plt.figure(figsize=(kwargs['fig_x'], kwargs['fig_y']))
         
         # Plot the dump we were assigned
@@ -361,6 +367,7 @@ def frame(fname, diag, kwargs):
         #    nlines = plotrc['nlines'] if 'nlines' in plotrc else 20
         #    overlay_flowlines(ax, dump, dump["rho"]*dump["u^1"], dump["rho"]*dump["u^2"], nlines=nlines)
         if 'overlay_grid' in kwargs and kwargs['overlay_grid']:
+            ax = fig.axes[0]
             overlay_grid(ax, dump.grid, kwargs['overlay_grid_spacing'], native=plotrc['native'], log_r=plotrc['log_r'])
         if 'overlay_blocks' in kwargs and kwargs['overlay_blocks']:
             overlay_blocks(ax, dump, native=plotrc['native'], log_r=plotrc['log_r'])

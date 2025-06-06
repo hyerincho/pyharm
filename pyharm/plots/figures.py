@@ -41,6 +41,7 @@ from ..ana.reductions import *
 from .plot_dumps import *
 from .plot_results import *
 from ..defs import FloorFlag_KHARMA, FloorFlag_iharm3d, InversionStatus
+from mpl_toolkits.axes_grid1.anchored_artists import AnchoredSizeBar
 
 __doc__ = \
 """Various full figures, combining plots & settings frequently used together.
@@ -462,13 +463,16 @@ def blob_analyses(fig, dump, diag, plotrc):
     plotrc['log']=True
     plotrc['at']=dump["nx3"]//2
     plotrc['vmin']=-9; plotrc['vmax']=-1
+    #plotrc['vmin']=-2; plotrc['vmax']=3
     plot_xz(ax_slc(1), dump, 'rho', **plotrc)
     plotrc['vmin']=-6; plotrc['vmax']=2
     plot_xz(ax_slc(2), dump, 'Theta', **plotrc)
     plotrc['vmin']=-1e2; plotrc['vmax']=1e2
     #ax_slc(3).set_title(r'$log_{10}(u^r/u_{\rm ff})$')
     if plotrc['native'] and not plotrc['embed_label']: overlay_streamlines_xz(ax_slc(3), dump, 'u^1', 'u^2', embed_label=plotrc['embed_label'], at=plotrc['at'])
+    plotrc['symlog']=True
     plot_xz(ax_slc(3), dump, 'u^r_over_uff', **plotrc)
+    plotrc['symlog']=False
     #plotrc['vmin']=-9; plotrc['vmax']=2
     if plotrc['native'] and not plotrc['embed_label']: overlay_streamlines_xz(ax_slc(4), dump, 'B1', 'B2', color='c', at=plotrc['at'])
     #plot_xz(ax_slc(4), dump, 'sigma', **plotrc)
@@ -615,15 +619,16 @@ def feedback_analyses(fig, dump, diag, plotrc):
     #plotrc['xticks'] = []
     plotrc['symlog']=True
     ng = (np.shape(dump["r"])[0] - dump["nx1"]) // 2
-    plotrc['at']=ng + 4
     vmax=1e-2 # 1e-3
     plotrc['vmin']=-vmax; plotrc['vmax']=vmax
     ax_slc(1).set_title('Total')
     ax_slc(2).set_title('Fluid')
     ax_slc(3).set_title('EM')
+    plotrc['at']=dump["nx3"]//2
     plot_xz(ax_slc(1), dump, dump['FE_norho_A'], **plotrc)
     plot_xz(ax_slc(2), dump, dump['FE_Fl_norho_A'], **plotrc)
     plot_xz(ax_slc(3), dump, dump['FE_EM_A'], **plotrc)
+    plotrc['at']=ng + 4
     plot_xy(ax_slc(4), dump, dump['FE_norho_A'], **plotrc)
     plot_xy(ax_slc(5), dump, dump['FE_Fl_norho_A'], **plotrc)
     plot_xy(ax_slc(6), dump, dump['FE_EM_A'], **plotrc)
@@ -675,4 +680,115 @@ def bflux0_test(fig, dump, diag, plotrc):
 
     fig.suptitle("t = {}".format(int(dump['t'])))
     fig.tight_layout()
+    return fig
+
+def multiscale(fig, dump, diag, plotrc):
+    """multi-scale movie
+    """
+    ax_slc = lambda i: plt.subplot(1, 6, i)
+    fig.subplots_adjust(wspace=0, hspace=0.)
+    plotrc['xlabel'] = True #False
+    plotrc['log']=True
+    plotrc['log_r']=False
+    plotrc['at']=0
+    plotrc['cbar']=False
+    plotrc['xlabel'] = False
+    plotrc['xticks'] = []
+    plotrc['ylabel'] = False
+    plotrc['yticks'] = []
+    plotrc['label'] = ""
+    if "quantity" not in plotrc:
+        plotrc["quantity"] = "rho"
+        plotrc['vmin']=-10; plotrc['vmax']=-3
+
+    for i in range(1,7):
+        sz = 8**(i+0.8)
+        plotrc['window'] = (-sz, sz, -sz, sz)
+        plot_xz(ax_slc(i), dump, plotrc["quantity"], **plotrc)
+        scale = np.power(10,np.floor(np.log10(sz)))
+        scalebar = AnchoredSizeBar(ax_slc(i).transData, scale, r'$10^{:d}\, r_g$'.format(int(np.log10(scale))), 'lower left', pad=0.5, color='k', frameon=False, size_vertical=sz/8**2)
+        ax_slc(i).add_artist(scalebar)
+    fig.suptitle("n = {}".format(int(dump['n_step'])))
+
+    cax = fig.add_axes([0.1, 0.91, 0.8, 0.03])
+    cbar = fig.colorbar(ax_slc(1).collections[0], cax=cax, orientation='horizontal')
+    fig.suptitle(pretty(plotrc["quantity"]))
+    
+    #fig.tight_layout()
+    return fig
+
+def multiscale_rho(fig, dump, diag, plotrc):
+    """multi-scale movie
+    """
+    
+    plotrc['quantity'] = "rho"
+    plotrc['vmin']=-10; plotrc['vmax']=-3
+    fig = multiscale(fig, dump, diag, plotrc)
+
+    return fig
+
+def multiscale_K(fig, dump, diag, plotrc):
+    """multi-scale movie
+    """
+    
+    plotrc['quantity'] = "K"
+    plotrc['vmin']=-1; plotrc['vmax']=5
+    fig = multiscale(fig, dump, diag, plotrc)
+
+    return fig
+
+def multiscale_beta(fig, dump, diag, plotrc):
+    """multi-scale movie
+    """
+    
+    plotrc['quantity'] = "beta"
+    plotrc['vmin']=-1; plotrc['vmax']=3
+    plotrc['cmap'] = 'plasma'
+    fig = multiscale(fig, dump, diag, plotrc)
+
+    return fig
+
+def multiscale_FEnorhoA(fig, dump, diag, plotrc):
+    """multi-scale movie
+    """
+    
+    plotrc['quantity'] = "FE_norho_A"
+    plotrc['vmax']=1e-3
+    plotrc['vmin']=-plotrc['vmax']
+    plotrc['symlog'] = True
+    fig = multiscale(fig, dump, diag, plotrc)
+
+    return fig
+
+def multiscale_Trho(fig, dump, diag, plotrc):
+    """multi-scale movie
+    """
+    
+    plt.rcParams.update({"font.size": 25})
+    _, axes = plt.subplots(2, 6, figsize=(36,12))
+    plt.subplots_adjust(hspace=0.02, wspace=0.02)
+    plotrc.update({'xlabel': False, 'ylabel': False,'xticks': [], 'yticks': [],'cbar': False, 'frame': False, 'shading': 'flat', 'no_title':False, 'log':True}) #
+    n_zones = 6
+
+    for i in range(np.shape(axes)[1]): #, ax1d in enumerate(axes):
+        if i < n_zones: 
+            sz = 8**(i+1.8)
+            window = (-sz, sz, -sz, sz)
+            plotrc.update({'vmin':8e-6, 'vmax':1, 'cmap':'gist_heat', 'window':window})
+            im1 = plot_xz(axes[0,i], dump, dump["Theta"], **plotrc)
+            plotrc.update({'vmin':1e-10, 'vmax':1e-4, 'cmap':'turbo', 'window':window})
+            im2 = plot_xz(axes[1,i], dump, dump["rho"], **plotrc)
+            scale = np.power(10,np.floor(np.log10(sz)))
+            c= 'white'
+            scalebar = AnchoredSizeBar(axes[0,i].transData, scale, r'$10^{:d}\, r_g$'.format(int(np.log10(scale))), 'lower left', pad=0.5, color=c, frameon=False, size_vertical=sz/8**2)
+            axes[0,i].add_artist(scalebar)
+            axes[0,i].title.set_visible(False)
+            
+            if i==0:
+                axes[0,i].text(-sz*0.9, sz*0.7, r'$T$', color='w', fontsize=40)
+                axes[1,i].text(-sz*0.9, sz*0.7, r'$\rho$', color='w', fontsize=40)
+            if i==1:
+                axes[0,i].text(-sz*0.9, sz*0.7, "n = {}".format(int(dump['n_step'])), color='w')
+    
+
     return fig
