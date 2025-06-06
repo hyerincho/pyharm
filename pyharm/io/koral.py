@@ -71,6 +71,8 @@ class KORALFile(DumpFile):
     def read_params(self, **kwargs):
         # TODO this probably needs t, etc, etc unless KORAL puts those in the header
         params = read_hdr(self.file['/header'])
+        params['t'] = self.get_dump_time(self.fname)
+        #params['n_step'] = fil.NCycle
         return parameters.fix(params)
 
     def read_var(self, var, slc=(), **kwargs):
@@ -78,8 +80,14 @@ class KORALFile(DumpFile):
         No analysis or extra processing is performed
         @return P, params
         """
-        if var == 'uvec':
-            return np.stack((self.read_var('U1', (), **kwargs), self.read_var('U2', (), **kwargs), self.read_var('U3', (), **kwargs)))
+        if var == "uvec_base":
+            return np.stack((self._prep_array(self.file['/quants/U1'][()], **kwargs), 
+                            self._prep_array(self.file['/quants/U2'][()], **kwargs), 
+                            self._prep_array(self.file['/quants/U3'][()], **kwargs)))
+        if var == "bvec_base":
+            return np.stack((self._prep_array(self.file['/quants/B1'][()], **kwargs), 
+                            self._prep_array(self.file['/quants/B2'][()], **kwargs), 
+                            self._prep_array(self.file['/quants/B3'][()], **kwargs)))
         else:
             for pair in (('RHO','rho'), ('UU','uint')):
                 if var == pair[0]:

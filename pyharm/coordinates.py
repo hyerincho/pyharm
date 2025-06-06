@@ -311,6 +311,9 @@ class CoordinateSystem(object):
 
 
         dxdX[0, 0] = 1
+        for i in range(3): 
+            dxdX[0, i+1] = 0
+            dxdX[i+1, 0] = 0
         return dxdX
 
 class Minkowski(CoordinateSystem):
@@ -1201,6 +1204,7 @@ class JKSKoral(KS):
         self.rmidcyl = 0.5 * (self.rcyl + met_params['r_in'])
         self.maxy = met_params['startx2'] + met_params['n2tot'] * met_params['dx2']
         self.r_out = met_params['r_out']
+        self.rmin = met_params['rmin']
 
         super(JKSKoral, self).__init__(met_params)
 
@@ -1388,7 +1392,7 @@ class JKSKoral(KS):
         return root
 
     def r(self, x):
-        x1in = np.log(1. - self.r0)
+        x1in = np.log(self.rmin - self.r0)
         x1brk = np.log(self.rbrk - self.r0)
         x1out = self.hyperexp_func_inv(self.r_out)
         x1sc = x1in + x[1] * (x1out - x1in)

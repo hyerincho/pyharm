@@ -113,7 +113,7 @@ class FluidState:
         else: # TODO extend?
             self.params = params
         self.units = units
-
+    
         if isinstance(data_source, dict):
             self.cache = data_source
             # Make sure we have both versions of uvec,B
@@ -237,6 +237,63 @@ class FluidState:
                 pass
         elif self.units is not None and key in self.units:
             return self.units[key]
+    
+        if io.get_dump_type(self.fname) == "KORAL" and key in ["ucon_base", "ucov_base", "ucon", "uvec", "U1", "U2", "U3", "bcon_base", "bcon", "B", "B1", "B2", "B3"]:
+            if key == 'ucon_base':
+                uvec_base = self['uvec_base']
+                qsq = (self['gcov_ks'][1, 1] * uvec_base[0] ** 2 +
+                        self['gcov_ks'][2, 2] * uvec_base[1] ** 2 +
+                        self['gcov_ks'][3, 3] * uvec_base[2] ** 2) + \
+                        2. * (self['gcov_ks'][1, 2] * uvec_base[0] * uvec_base[1] +
+                            self['gcov_ks'][1, 3] * uvec_base[0] * uvec_base[2] +
+                            self['gcov_ks'][2, 3] * uvec_base[1] * uvec_base[2])
+                alpgam = np.sqrt((1. + qsq) * (-1. / self['gcon_ks'][0, 0]))
+                ucon_base = np.zeros((4, *uvec_base[0].shape))
+                ucon_base[0] = - alpgam * self["gcon_ks"][0,0]
+                for mu in range(1, 4):
+                    ucon_base[mu] = uvec_base[mu-1] - alpgam * self['gcon_ks'][0, mu]
+                return ucon_base
+            if key == 'ucon' or key == 'bcon':
+                return np.einsum("i...,ji...->j...", self[key + '_base'], self['dXdx'])
+            if key == 'uvec':
+                ucon = self['ucon']
+                uvec = np.zeros((3, *ucon[0].shape))
+                for mu in range(0, 3):
+                    uvec[mu] = ucon[mu+1] - ucon[0] * self['gcon_ks'][0, mu+1] / self['gcon_ks'][0, 0]
+                return uvec
+            if key == 'U1':
+                return self["uvec"][0]
+            if key == 'U2':
+                return self["uvec"][1]
+            if key == 'U3':
+                return self["uvec"][2]
+            if key == 'bcon_base':
+                bvec_base = self['bvec_base']
+                ucon_base = self['ucon_base']
+                ucov_base = self['ucov_base']
+                bcon_base = np.zeros_like(self['ucon_base'])
+                bcon_base[0] = bvec_base[0] * ucov_base[1] + \
+                          bvec_base[1] * ucov_base[2] + \
+                          bvec_base[2] * ucov_base[3]
+                for mu in range(1, 4):
+                    bcon_base[mu] = (bvec_base[mu-1] + bcon_base[0] * ucon_base[mu]) / ucon_base[0]
+                return bcon_base
+            if key == 'ucov_base' or key == 'bcov_base':
+                return np.einsum("ij...,j...->i...", self['gcov_ks'], self[key.replace('cov','con')])
+            if key == 'B':
+                B = np.zeros_like(self['uvec'])
+                bcon = self['bcon']
+                ucon = self['ucon']
+                for mu in range(0, 3):
+                    B[mu] = bcon[mu + 1] * ucon[0] - bcon[0] * ucon[mu + 1]
+                return B
+            if key == 'B1':
+                return self["B"][0]
+            if key == 'B2':
+                return self["B"][1]
+            if key == 'B3':
+                return self["B"][2]
+
 
         # Otherwise run functions and cache the result
         # Putting this before reading lets us translate & standardize reads/caches
