@@ -238,8 +238,8 @@ class FluidState:
         elif self.units is not None and key in self.units:
             return self.units[key]
     
-        if io.get_dump_type(self.fname) == "KORAL" and key in ["ucon_base", "ucov_base", "ucon", "uvec", "U1", "U2", "U3", "bcon_base", "bcon", "B", "B1", "B2", "B3"]:
-            if key == 'ucon_base':
+        if io.get_dump_type(self.fname) == "KORAL" and key in ["ucon_base", "ucov_base", "ucon", "uvec", "U1", "U2", "U3", "bcon_base", "bcon", "B", "B1", "B2", "B3", "Gamma"]:
+            if key == 'Gamma':
                 uvec_base = self['uvec_base']
                 qsq = (self['gcov_ks'][1, 1] * uvec_base[0] ** 2 +
                         self['gcov_ks'][2, 2] * uvec_base[1] ** 2 +
@@ -247,7 +247,10 @@ class FluidState:
                         2. * (self['gcov_ks'][1, 2] * uvec_base[0] * uvec_base[1] +
                             self['gcov_ks'][1, 3] * uvec_base[0] * uvec_base[2] +
                             self['gcov_ks'][2, 3] * uvec_base[1] * uvec_base[2])
-                alpgam = np.sqrt((1. + qsq) * (-1. / self['gcon_ks'][0, 0]))
+                return np.sqrt(1. + qsq)
+            if key == 'ucon_base':
+                uvec_base = self['uvec_base']
+                alpgam = np.sqrt((-1. / self['gcon_ks'][0, 0])) * self['Gamma']
                 ucon_base = np.zeros((4, *uvec_base[0].shape))
                 ucon_base[0] = - alpgam * self["gcon_ks"][0,0]
                 for mu in range(1, 4):
